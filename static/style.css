@@ -1,0 +1,130 @@
+* { box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0; padding: 0;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #eee;
+  min-height: 100vh;
+}
+.container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 30px;
+  background: rgba(255,255,255,0.07);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  backdrop-filter: blur(4px);
+}
+h1 {
+  color: #00d9ff;
+  text-align: center;
+  margin-bottom: 10px;
+}
+.subtitle {
+  text-align: center;
+  color: #aaa;
+  margin-bottom: 24px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+th, td {
+  padding: 12px 10px;
+  text-align: left;
+}
+th {
+  background: #0f3460;
+  color: #00d9ff;
+}
+tr:nth-child(even) { background: rgba(255,255,255,0.04); }
+tr:hover { background: rgba(0,217,255,0.08); }
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85em;
+}
+.badge.libre { background: #27ae60; color: #fff; }
+.badge.reserve { background: #e74c3c; color: #fff; }
+a.btn {
+  display: inline-block;
+  padding: 8px 16px;
+  background: #00d9ff;
+  color: #1a1a2e;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+a.btn:hover { background: #00b8d4; }
+form div { margin-bottom: 16px; }
+label { display: block; margin-bottom: 6px; color: #ccc; }
+input[type="text"], input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #1f4068;
+  color: #fff;
+}
+input[readonly] { background: #162447; color: #888; }
+button {
+  padding: 10px 24px;
+  background: #00d9ff;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+button:hover { background: #00b8d4; }
+.flash { padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+.flash.success { background: #27ae60; color: #fff; }
+.flash.error { background: #e74c3c; color: #fff; }
+
+/* Reserve panel */
+details.reserve-panel {
+  background: rgba(0,217,255,0.08);
+  border: 1px solid #00d9ff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+details.reserve-panel summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.1em;
+  color: #00d9ff;
+  outline: none;
+}
+details.reserve-panel[open] summary {
+  margin-bottom: 16px;
+}
+.reserve-form { display: flex; flex-direction: column; gap: 14px; }
+select {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: #1f4068;
+  color: #fff;
+  font-size: 1em;
+}
+select option { background: #162447; }
+
+/* Admin sections */
+.admin-section {
+  background: rgba(255,255,255,0.05);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.admin-section h2 {
+  margin-top: 0;
+  color: #00d9ff;
+  font-size: 1.1em;
+}
+.admin-form { display: flex; flex-direction: column; gap: 12px; }

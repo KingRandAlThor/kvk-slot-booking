@@ -1,0 +1,55 @@
+{% extends 'layout.html' %}
+
+{% block title %}Admin — KVK Slot Booking{% endblock %}
+
+{% block content %}
+  <h1>⚙️ Admin Panel</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="admin-section">
+    <h2>📅 Current Event Date</h2>
+    <p style="font-size:1.3em; color:#00d9ff;">{{ current_date }}</p>
+    <p>Total reservations: <strong>{{ reservation_count }}</strong></p>
+  </div>
+
+  <div class="admin-section">
+    <h2>🔄 Change Event Date</h2>
+    <form method="post" class="admin-form">
+      <input type="hidden" name="action" value="set_date">
+      <div>
+        <label>New date (YYYY-MM-DD)</label>
+        <input type="date" name="new_date" required>
+      </div>
+      <div>
+        <label>Admin password</label>
+        <input type="password" name="password" placeholder="Enter password" required>
+      </div>
+      <div style="margin-top:12px;">
+        <button type="submit">📅 Set new date &amp; clear reservations</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="admin-section">
+    <h2>🗑️ Reset Reservations Only</h2>
+    <form method="post" class="admin-form" onsubmit="return confirm('Are you sure you want to delete all reservations?');">
+      <input type="hidden" name="action" value="reset">
+      <div>
+        <label>Admin password</label>
+        <input type="password" name="password" placeholder="Enter password" required>
+      </div>
+      <button type="submit" style="background:#e74c3c;">🗑️ Clear all reservations</button>
+    </form>
+  </div>
+
+  <div style="margin-top:32px;">
+    <a class="btn" href="{{ url_for('index') }}">← Back to booking</a>
+  </div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'layout.html' %}
+
+{% block title %}Créneaux — {{ event_date }}{% endblock %}
+
+{% block content %}
+  <h1>🗓️ Réservation de créneaux</h1>
+  <p class="subtitle">{{ event_date }} — de 00:00 à 23:59 UTC</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <table>
+    <thead>
+      <tr><th>Heure (UTC)</th><th>Statut</th><th>Joueur</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      {% for s in slots %}
+      <tr>
+        <td>{{ s.slot.strftime('%H:%M') }}</td>
+        <td>
+          {% if s.reserved %}
+            <span class="badge reserve">Réservé</span>
+          {% else %}
+            <span class="badge libre">Libre</span>
+          {% endif %}
+        </td>
+        <td>{{ s.player if s.player else '—' }}</td>
+        <td>
+          {% if not s.reserved %}
+            <a class="btn" href="{{ url_for('reserve') }}?slot={{ s.iso }}">Réserver</a>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

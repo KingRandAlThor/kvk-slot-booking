@@ -1,0 +1,67 @@
+{% extends 'layout.html' %}
+
+{% block title %}Booking — {{ event_date }}{% endblock %}
+
+{% block content %}
+  <h1>🗓️ Slot Booking</h1>
+  <p class="subtitle">{{ event_date }} — 00:00 to 23:59 UTC</p>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Reservation form with dropdown -->
+  <details class="reserve-panel" open>
+    <summary>📝 Book a slot</summary>
+    <form method="post" class="reserve-form">
+      <div>
+        <label>Available slot</label>
+        <select name="slot" required>
+          <option value="">-- Select a slot --</option>
+          {% for s in free_slots %}
+            <option value="{{ s.iso }}">{{ s.slot.strftime('%H:%M') }} UTC</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Player name</label>
+        <input type="text" name="player_name" placeholder="Your in-game name" required>
+      </div>
+      <div>
+        <label>Speedup days (min. {{ min_speedup }})</label>
+        <input type="number" name="speedup_days" min="{{ min_speedup }}" value="20" required>
+      </div>
+      <div style="margin-top:16px;">
+        <button type="submit">✔️ Confirm booking</button>
+      </div>
+    </form>
+  </details>
+
+  <!-- Slots table -->
+  <h2 style="margin-top:32px;">📋 All slots</h2>
+  <table>
+    <thead>
+      <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th></tr>
+    </thead>
+    <tbody>
+      {% for s in slots %}
+      <tr>
+        <td>{{ s.slot.strftime('%H:%M') }} UTC</td>
+        <td>
+          {% if s.reserved %}
+            <span class="badge reserve">Reserved</span>
+          {% else %}
+            <span class="badge libre">Available</span>
+          {% endif %}
+        </td>
+        <td>{{ s.player if s.player else '—' }}</td>
+        <td>{{ (s.days|string ~ ' days') if s.days else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
