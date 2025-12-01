@@ -152,13 +152,25 @@ def admin():
             except ValueError:
                 flash('Invalid date format. Use YYYY-MM-DD.', 'error')
         
+        elif action == 'delete_one':
+            reservation_id = request.form.get('reservation_id', '').strip()
+            if reservation_id:
+                cur.execute('DELETE FROM reservations WHERE id = ?;', (reservation_id,))
+                db.commit()
+                flash('Reservation deleted.', 'success')
+            else:
+                flash('No reservation selected.', 'error')
+        
         return redirect(url_for('admin'))
     
     # GET: show admin page
     current_date = get_event_date()
     cur.execute('SELECT COUNT(*) FROM reservations;')
     reservation_count = cur.fetchone()[0]
-    return render_template('admin.html', current_date=current_date, reservation_count=reservation_count)
+    # Get all reservations for the list
+    cur.execute('SELECT id, slot_start, player_name, speedup_days FROM reservations ORDER BY slot_start;')
+    reservations = cur.fetchall()
+    return render_template('admin.html', current_date=current_date, reservation_count=reservation_count, reservations=reservations)
 
 # Keep /slots as alias
 @app.route('/slots')

@@ -49,6 +49,31 @@
     </form>
   </div>
 
+  <div class="admin-section">
+    <h2>❌ Delete a Single Reservation</h2>
+    {% if reservations and reservations|length > 0 %}
+    <form method="post" class="admin-form" onsubmit="return confirm('Delete this reservation?');">
+      <input type="hidden" name="action" value="delete_one">
+      <div>
+        <label>Select reservation to delete</label>
+        <select name="reservation_id" required>
+          <option value="">-- Select --</option>
+          {% for r in reservations %}
+            <option value="{{ r['id'] }}">{{ r['slot_start'][:16] }} - {{ r['player_name'] }} ({{ r['speedup_days'] }} days)</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Admin password</label>
+        <input type="password" name="password" placeholder="Enter password" required>
+      </div>
+      <button type="submit" style="background:#e67e22;">❌ Delete selected</button>
+    </form>
+    {% else %}
+    <p style="color:#888;">No reservations to delete.</p>
+    {% endif %}
+  </div>
+
   <div style="margin-top:32px;">
     <a class="btn" href="{{ url_for('index') }}">← Back to booking</a>
   </div>
