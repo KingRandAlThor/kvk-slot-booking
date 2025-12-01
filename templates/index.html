@@ -45,7 +45,7 @@
   <h2 style="margin-top:32px;">📋 All slots</h2>
   <table>
     <thead>
-      <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th></tr>
+      <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th><th>Action</th></tr>
     </thead>
     <tbody>
       {% for s in slots %}
@@ -60,6 +60,27 @@
         </td>
         <td>{{ s.player if s.player else '—' }}</td>
         <td>{{ (s.days|string ~ ' days') if s.days else '—' }}</td>
+        <td>
+          {% if s.reserved %}
+            <details class="move-dropdown">
+              <summary class="btn-move">🔀 Move</summary>
+              <form method="post" class="move-form">
+                <input type="hidden" name="action" value="move">
+                <input type="hidden" name="old_slot" value="{{ s.iso }}">
+                <select name="new_slot" required>
+                  <option value="">-- New slot --</option>
+                  {% for f in free_slots %}
+                    <option value="{{ f.iso }}">{{ f.slot.strftime('%H:%M') }} UTC</option>
+                  {% endfor %}
+                </select>
+                <input type="password" name="password" placeholder="Admin pwd" required>
+                <button type="submit">✔️</button>
+              </form>
+            </details>
+          {% else %}
+            —
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

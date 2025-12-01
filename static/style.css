@@ -128,3 +128,47 @@ select option { background: #162447; }
   font-size: 1.1em;
 }
 .admin-form { display: flex; flex-direction: column; gap: 12px; }
+
+/* Move reservation dropdown */
+.move-dropdown {
+  position: relative;
+}
+.move-dropdown summary {
+  list-style: none;
+  cursor: pointer;
+}
+.move-dropdown summary::-webkit-details-marker { display: none; }
+.btn-move {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #e67e22;
+  color: #fff;
+  border-radius: 6px;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+.btn-move:hover { background: #d35400; }
+.move-form {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: #1f4068;
+  padding: 10px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 100;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+.move-form select, .move-form input {
+  padding: 6px;
+  border-radius: 4px;
+  border: none;
+  font-size: 0.9em;
+}
+.move-form button {
+  padding: 6px 12px;
+  font-size: 0.9em;
+}

@@ -74,34 +74,59 @@ def index():
 
     # Handle reservation POST
     if request.method == 'POST':
-        slot_iso = request.form.get('slot', '')
-        player_name = request.form.get('player_name', '').strip()
-        try:
-            speedup_days = int(request.form.get('speedup_days', '0'))
-        except ValueError:
-            speedup_days = 0
-
-        slot_dt = parse_iso_slot(slot_iso)
-
-        # Validations
-        if slot_dt is None:
-            flash('Invalid slot.', 'error')
-        elif not slot_aligned(slot_dt):
-            flash('Slot must be on the hour or half-hour.', 'error')
-        elif speedup_days < SLOT_MIN_SPEEDUP_DAYS:
-            flash(f'You need at least {SLOT_MIN_SPEEDUP_DAYS} days of speedups.', 'error')
-        else:
-            # Check availability
-            cur.execute('SELECT COUNT(*) FROM reservations WHERE slot_start = ?;', (slot_iso,))
-            if cur.fetchone()[0] > 0:
-                flash('This slot is already reserved.', 'error')
+        action = request.form.get('action', 'reserve')
+        
+        # Move reservation action
+        if action == 'move':
+            password = request.form.get('password', '').strip()
+            if password != ADMIN_PASSWORD:
+                flash('Incorrect admin password.', 'error')
             else:
-                # Insert reservation
-                now = datetime.now(timezone.utc)
-                cur.execute('INSERT INTO reservations (slot_start, player_name, speedup_days, created_at) VALUES (?, ?, ?, ?);',
-                            (slot_iso, player_name, speedup_days, now.isoformat()))
-                db.commit()
-                flash(f'Reservation confirmed for {slot_dt.strftime("%H:%M")} UTC!', 'success')
+                old_slot = request.form.get('old_slot', '')
+                new_slot = request.form.get('new_slot', '')
+                if old_slot and new_slot:
+                    # Check new slot is free
+                    cur.execute('SELECT COUNT(*) FROM reservations WHERE slot_start = ?;', (new_slot,))
+                    if cur.fetchone()[0] > 0:
+                        flash('New slot is already taken.', 'error')
+                    else:
+                        # Move the reservation
+                        cur.execute('UPDATE reservations SET slot_start = ? WHERE slot_start = ?;', (new_slot, old_slot))
+                        db.commit()
+                        new_dt = parse_iso_slot(new_slot)
+                        flash(f'Reservation moved to {new_dt.strftime("%H:%M")} UTC!', 'success')
+                else:
+                    flash('Missing slot information.', 'error')
+        else:
+            # Normal reservation
+            slot_iso = request.form.get('slot', '')
+            player_name = request.form.get('player_name', '').strip()
+            try:
+                speedup_days = int(request.form.get('speedup_days', '0'))
+            except ValueError:
+                speedup_days = 0
+
+            slot_dt = parse_iso_slot(slot_iso)
+
+            # Validations
+            if slot_dt is None:
+                flash('Invalid slot.', 'error')
+            elif not slot_aligned(slot_dt):
+                flash('Slot must be on the hour or half-hour.', 'error')
+            elif speedup_days < SLOT_MIN_SPEEDUP_DAYS:
+                flash(f'You need at least {SLOT_MIN_SPEEDUP_DAYS} days of speedups.', 'error')
+            else:
+                # Check availability
+                cur.execute('SELECT COUNT(*) FROM reservations WHERE slot_start = ?;', (slot_iso,))
+                if cur.fetchone()[0] > 0:
+                    flash('This slot is already reserved.', 'error')
+                else:
+                    # Insert reservation
+                    now = datetime.now(timezone.utc)
+                    cur.execute('INSERT INTO reservations (slot_start, player_name, speedup_days, created_at) VALUES (?, ?, ?, ?);',
+                                (slot_iso, player_name, speedup_days, now.isoformat()))
+                    db.commit()
+                    flash(f'Reservation confirmed for {slot_dt.strftime("%H:%M")} UTC!', 'success')
 
     # Build slots list
     slots_list = []
