@@ -1,9 +1,9 @@
 {% extends 'layout.html' %}
 
-{% block title %}Booking — {{ event_date }}{% endblock %}
+{% block title %}{{ event_type.emoji }} {{ event_type.name }} — {{ event_date }}{% endblock %}
 
 {% block content %}
-  <h1>🗓️ Slot Booking</h1>
+  <h1>{{ event_type.emoji }} {{ event_type.name }} Day</h1>
   <p class="subtitle">{{ event_date }} — 00:00 to 23:59 UTC</p>
 
   {% with messages = get_flashed_messages(with_categories=true) %}

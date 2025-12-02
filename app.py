@@ -20,6 +20,13 @@ SLOT_MIN_SPEEDUP_DAYS = 20
 DEFAULT_EVENT_DATE = '2025-12-02'  # YYYY-MM-DD format
 ADMIN_PASSWORD = 'kvk2025'  # Change this to your desired password
 
+# Event types by weekday (0=Monday, 1=Tuesday, etc.)
+EVENT_TYPES = {
+    0: {'name': 'Construction', 'emoji': '🏗️'},
+    1: {'name': 'Research', 'emoji': '🔬'},
+    3: {'name': 'Troop Training', 'emoji': '⚔️'},
+}
+
 def get_event_date():
     """Get event date from config table, or use default."""
     db = get_db()
@@ -141,7 +148,10 @@ def index():
 
     free_slots = [s for s in slots_list if not s['reserved']]
     event_display = event_start.strftime('%A, %B %d, %Y')
-    return render_template('index.html', slots=slots_list, free_slots=free_slots, event_date=event_display, min_speedup=SLOT_MIN_SPEEDUP_DAYS)
+    # Get event type based on weekday
+    weekday = event_start.weekday()
+    event_type = EVENT_TYPES.get(weekday, {'name': 'Event', 'emoji': '🗓️'})
+    return render_template('index.html', slots=slots_list, free_slots=free_slots, event_date=event_display, min_speedup=SLOT_MIN_SPEEDUP_DAYS, event_type=event_type)
 
 # Admin route to reset reservations and set new event date
 @app.route('/admin', methods=['GET', 'POST'])
