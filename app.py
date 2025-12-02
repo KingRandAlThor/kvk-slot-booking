@@ -44,6 +44,30 @@ def set_event_date(date_str: str):
     cur.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('event_date', ?);",(date_str,))
     db.commit()
 
+def get_registration_open():
+    """Get registration open datetime from config table."""
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT value FROM config WHERE key = 'registration_open';")
+    row = cur.fetchone()
+    if row:
+        return row['value']
+    return None  # None means always open
+
+def set_registration_open(datetime_str: str):
+    """Set registration open datetime in config table."""
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('registration_open', ?);",(datetime_str,))
+    db.commit()
+
+def clear_registration_open():
+    """Clear registration open datetime (make registrations always open)."""
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("DELETE FROM config WHERE key = 'registration_open';")
+    db.commit()
+
 def slot_aligned(dt: datetime) -> bool:
     return dt.second == 0 and dt.minute in (0, 30)
 
@@ -76,11 +100,26 @@ def index():
         event_start = datetime(2025, 12, 2, 0, 0, 0, tzinfo=timezone.utc)
     event_end = event_start.replace(hour=23, minute=59)
 
+    # Check if registrations are open
+    registration_open_str = get_registration_open()
+    registrations_open = True
+    countdown_target = None
+    
+    if registration_open_str:
+        try:
+            open_dt = datetime.fromisoformat(registration_open_str).replace(tzinfo=timezone.utc)
+            now = datetime.now(timezone.utc)
+            if now < open_dt:
+                registrations_open = False
+                countdown_target = registration_open_str
+        except:
+            pass
+
     db = get_db()
     cur = db.cursor()
 
     # Handle reservation POST
-    if request.method == 'POST':
+    if request.method == 'POST' and registrations_open:
         action = request.form.get('action', 'reserve')
         
         # Move reservation action
@@ -151,7 +190,7 @@ def index():
     # Get event type based on weekday
     weekday = event_start.weekday()
     event_type = EVENT_TYPES.get(weekday, {'name': 'Event', 'emoji': '🗓️'})
-    return render_template('index.html', slots=slots_list, free_slots=free_slots, event_date=event_display, min_speedup=SLOT_MIN_SPEEDUP_DAYS, event_type=event_type)
+    return render_template('index.html', slots=slots_list, free_slots=free_slots, event_date=event_display, min_speedup=SLOT_MIN_SPEEDUP_DAYS, event_type=event_type, registrations_open=registrations_open, countdown_target=countdown_target)
 
 # Admin route to reset reservations and set new event date
 @app.route('/admin', methods=['GET', 'POST'])
@@ -196,6 +235,60 @@ def admin():
             else:
                 flash('No reservation selected.', 'error')
         
+        elif action == 'set_event_settings':
+            # Combined event date + registration open time
+            event_date = request.form.get('event_date', '').strip()
+            open_date = request.form.get('open_date', '').strip()
+            open_time = request.form.get('open_time', '').strip()
+            clear_reservations = request.form.get('clear_reservations') == '1'
+            
+            # Set event date
+            try:
+                datetime.strptime(event_date, '%Y-%m-%d')
+                set_event_date(event_date)
+            except ValueError:
+                flash('Invalid event date format.', 'error')
+                return redirect(url_for('admin'))
+            
+            # Set registration open time (or clear if empty)
+            if open_date and open_time:
+                try:
+                    open_datetime_str = f"{open_date}T{open_time}:00"
+                    datetime.fromisoformat(open_datetime_str)  # Validate
+                    set_registration_open(open_datetime_str)
+                except ValueError:
+                    flash('Invalid registration open date/time.', 'error')
+                    return redirect(url_for('admin'))
+            else:
+                # Clear registration open (open immediately)
+                clear_registration_open()
+            
+            # Clear reservations if requested
+            if clear_reservations:
+                cur.execute('DELETE FROM reservations;')
+                db.commit()
+                flash('Settings saved. All reservations cleared.', 'success')
+            else:
+                flash('Settings saved.', 'success')
+        
+        elif action == 'set_open_time':
+            open_date = request.form.get('open_date', '').strip()
+            open_time = request.form.get('open_time', '').strip()
+            if open_date and open_time:
+                try:
+                    open_datetime_str = f"{open_date}T{open_time}:00"
+                    datetime.fromisoformat(open_datetime_str)  # Validate
+                    set_registration_open(open_datetime_str)
+                    flash(f'Registrations will open at {open_date} {open_time} UTC.', 'success')
+                except ValueError:
+                    flash('Invalid date/time format.', 'error')
+            else:
+                flash('Please provide both date and time.', 'error')
+        
+        elif action == 'clear_open_time':
+            clear_registration_open()
+            flash('Registrations are now open immediately.', 'success')
+        
         return redirect(url_for('admin'))
     
     # GET: show admin page
@@ -205,7 +298,9 @@ def admin():
     # Get all reservations for the list
     cur.execute('SELECT id, slot_start, player_name, speedup_days FROM reservations ORDER BY slot_start;')
     reservations = cur.fetchall()
-    return render_template('admin.html', current_date=current_date, reservation_count=reservation_count, reservations=reservations)
+    # Get registration open time
+    registration_open = get_registration_open()
+    return render_template('admin.html', current_date=current_date, reservation_count=reservation_count, reservations=reservations, registration_open=registration_open)
 
 # Keep /slots as alias
 @app.route('/slots')

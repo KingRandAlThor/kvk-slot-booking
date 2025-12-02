@@ -1,10 +1,10 @@
 {% extends 'layout.html' %}
 
-{% block title %}{{ event_type.emoji }} {{ event_type.name }} — {{ event_date }}{% endblock %}
+{% block title %}👑 {{ event_type.name }} — KINGSHOT{% endblock %}
 
 {% block content %}
-  <h1>{{ event_type.emoji }} {{ event_type.name }} Day</h1>
-  <p class="subtitle">{{ event_date }} — 00:00 to 23:59 UTC</p>
+  <h1>👑 {{ event_type.name }} Day {{ event_type.emoji }}</h1>
+  <p class="subtitle">⚔️ {{ event_date }} — 00:00 to 23:59 UTC ⚔️</p>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -14,9 +14,64 @@
     {% endif %}
   {% endwith %}
 
+  {% if not registrations_open %}
+  <!-- Countdown timer -->
+  <div class="countdown-panel">
+    <h2>⏳ Registrations open in</h2>
+    <div id="countdown" class="countdown-timer">
+      <div class="countdown-item">
+        <span id="countdown-days">--</span>
+        <small>Days</small>
+      </div>
+      <div class="countdown-item">
+        <span id="countdown-hours">--</span>
+        <small>Hours</small>
+      </div>
+      <div class="countdown-item">
+        <span id="countdown-minutes">--</span>
+        <small>Minutes</small>
+      </div>
+      <div class="countdown-item">
+        <span id="countdown-seconds">--</span>
+        <small>Seconds</small>
+      </div>
+    </div>
+    <p class="countdown-note">🔒 Booking will be available once the countdown ends.</p>
+  </div>
+
+  <script>
+    (function() {
+      const targetDate = new Date("{{ countdown_target }}Z");
+      
+      function updateCountdown() {
+        const now = new Date();
+        const diff = targetDate - now;
+        
+        if (diff <= 0) {
+          // Reload page when countdown ends
+          location.reload();
+          return;
+        }
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        document.getElementById('countdown-days').textContent = String(days).padStart(2, '0');
+        document.getElementById('countdown-hours').textContent = String(hours).padStart(2, '0');
+        document.getElementById('countdown-minutes').textContent = String(minutes).padStart(2, '0');
+        document.getElementById('countdown-seconds').textContent = String(seconds).padStart(2, '0');
+      }
+      
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    })();
+  </script>
+  {% else %}
   <!-- Reservation form -->
   <div class="reserve-panel">
-    <h2>📝 Book a slot</h2>
+    <h2>⚔️ Claim Your Battle Slot</h2>
     <form method="post" class="reserve-form">
       <div>
         <label>Available slot</label>
@@ -36,13 +91,15 @@
         <input type="number" name="speedup_days" min="{{ min_speedup }}" value="20" required>
       </div>
       <div style="margin-top:16px;">
-        <button type="submit">✔️ Confirm booking</button>
+        <button type="submit">⚔️ Confirm Reservation</button>
       </div>
     </form>
   </div>
+  {% endif %}
 
   <!-- Slots table -->
-  <h2 style="margin-top:32px;">📋 All slots</h2>
+  <div class="crown-divider">👑 ⚔️ 👑</div>
+  <h2 style="margin-top:16px;">🗡️ Battle Schedule</h2>
   <table>
     <thead>
       <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th><th>Action</th></tr>

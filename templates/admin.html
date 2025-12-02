@@ -1,9 +1,9 @@
 {% extends 'layout.html' %}
 
-{% block title %}Admin — KVK Slot Booking{% endblock %}
+{% block title %}👑 Admin — KINGSHOT{% endblock %}
 
 {% block content %}
-  <h1>⚙️ Admin Panel</h1>
+  <h1>👑 Command Center</h1>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -14,31 +14,54 @@
   {% endwith %}
 
   <div class="admin-section">
-    <h2>📅 Current Event Date</h2>
-    <p style="font-size:1.3em; color:#00d9ff;">{{ current_date }}</p>
-    <p>Total reservations: <strong>{{ reservation_count }}</strong></p>
-  </div>
-
-  <div class="admin-section">
-    <h2>🔄 Change Event Date</h2>
-    <form method="post" class="admin-form">
-      <input type="hidden" name="action" value="set_date">
-      <div>
-        <label>New date (YYYY-MM-DD)</label>
-        <input type="date" name="new_date" required>
+    <h2>⚔️ Event & Registration Settings</h2>
+    
+    <div class="settings-info">
+      <p><strong>Event Date:</strong> <span style="color:#daa520;">{{ current_date }}</span></p>
+      <p><strong>Total reservations:</strong> {{ reservation_count }}</p>
+      {% if registration_open %}
+      <p><strong>Registrations open:</strong> <span style="color:#ff6b35;">{{ registration_open[:16].replace('T', ' ') }} UTC</span></p>
+      {% else %}
+      <p><strong>Registrations:</strong> <span style="color:#7fff00;">Open immediately</span></p>
+      {% endif %}
+    </div>
+    
+    <form method="post" class="admin-form" style="margin-top:16px;">
+      <input type="hidden" name="action" value="set_event_settings">
+      
+      <div class="form-row">
+        <div class="form-col">
+          <label>📅 Event Date</label>
+          <input type="date" name="event_date" value="{{ current_date }}" required>
+        </div>
       </div>
+      
+      <div class="form-row">
+        <div class="form-col">
+          <label>⏰ Registration Opens (Date)</label>
+          <input type="date" name="open_date" {% if registration_open %}value="{{ registration_open[:10] }}"{% endif %}>
+        </div>
+        <div class="form-col">
+          <label>⏰ Time (UTC)</label>
+          <input type="time" name="open_time" {% if registration_open %}value="{{ registration_open[11:16] }}"{% endif %}>
+        </div>
+      </div>
+      <p style="font-size:0.85em; color:#888; margin-top:4px;">Leave registration date/time empty to open immediately.</p>
+      
       <div>
-        <label>Admin password</label>
+        <label>🔑 Admin password</label>
         <input type="password" name="password" placeholder="Enter password" required>
       </div>
-      <div style="margin-top:12px;">
-        <button type="submit">📅 Set new date &amp; clear reservations</button>
+      
+      <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+        <button type="submit">💾 Save settings</button>
+        <button type="submit" name="clear_reservations" value="1" style="background:#e74c3c;" onclick="return confirm('This will also clear all reservations. Continue?');">💾 Save & clear reservations</button>
       </div>
     </form>
   </div>
 
   <div class="admin-section">
-    <h2>🗑️ Reset Reservations Only</h2>
+    <h2>🗡️ Reset Reservations Only</h2>
     <form method="post" class="admin-form" onsubmit="return confirm('Are you sure you want to delete all reservations?');">
       <input type="hidden" name="action" value="reset">
       <div>
@@ -50,7 +73,7 @@
   </div>
 
   <div class="admin-section">
-    <h2>❌ Delete a Single Reservation</h2>
+    <h2>☠️ Delete a Single Reservation</h2>
     {% if reservations and reservations|length > 0 %}
     <form method="post" class="admin-form" onsubmit="return confirm('Delete this reservation?');">
       <input type="hidden" name="action" value="delete_one">
@@ -75,6 +98,6 @@
   </div>
 
   <div style="margin-top:32px;">
-    <a class="btn" href="{{ url_for('index') }}">← Back to booking</a>
+    <a class="btn" href="{{ url_for('index') }}">⚔️ Return to Battle</a>
   </div>
 {% endblock %}
