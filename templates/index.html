@@ -50,20 +50,20 @@
     <tbody>
       {% for s in slots %}
       <tr>
-        <td>{{ s.slot.strftime('%H:%M') }} UTC</td>
-        <td>
+        <td data-label="Time">{{ s.slot.strftime('%H:%M') }} UTC</td>
+        <td data-label="Status">
           {% if s.reserved %}
             <span class="badge reserve">Reserved</span>
           {% else %}
             <span class="badge libre">Available</span>
           {% endif %}
         </td>
-        <td>{{ s.player if s.player else '—' }}</td>
-        <td>{{ (s.days|string ~ ' days') if s.days else '—' }}</td>
-        <td>
+        <td data-label="Player">{{ s.player if s.player else '—' }}</td>
+        <td data-label="Speedups">{{ (s.days|string ~ ' days') if s.days else '—' }}</td>
+        <td data-label="Action">
           {% if s.reserved %}
             <details class="move-dropdown">
-              <summary class="btn-move">🔀 Move</summary>
+              <summary class="btn-move">🔀</summary>
               <form method="post" class="move-form">
                 <input type="hidden" name="action" value="move">
                 <input type="hidden" name="old_slot" value="{{ s.iso }}">

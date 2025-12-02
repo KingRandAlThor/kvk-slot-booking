@@ -172,3 +172,134 @@ select option { background: #162447; }
   padding: 6px 12px;
   font-size: 0.9em;
 }
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .container {
+    margin: 10px;
+    padding: 16px;
+    border-radius: 12px;
+  }
+  
+  h1 {
+    font-size: 1.4em;
+  }
+  
+  .subtitle {
+    font-size: 0.9em;
+  }
+  
+  /* Table mobile layout */
+  table {
+    font-size: 0.85em;
+  }
+  
+  th, td {
+    padding: 8px 4px;
+  }
+  
+  /* Hide less important columns on small screens */
+  table th:nth-child(4),
+  table td:nth-child(4) {
+    display: none;
+  }
+  
+  .badge {
+    padding: 3px 6px;
+    font-size: 0.75em;
+  }
+  
+  .btn-move {
+    padding: 3px 6px;
+    font-size: 0.75em;
+  }
+  
+  /* Move form adjustments */
+  .move-form {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    min-width: auto;
+    padding: 16px;
+  }
+  
+  /* Form inputs */
+  input[type="text"], input[type="number"], select {
+    padding: 12px;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  button {
+    padding: 12px 20px;
+    font-size: 1em;
+    width: 100%;
+  }
+  
+  /* Reserve panel */
+  details.reserve-panel {
+    padding: 12px;
+  }
+  
+  details.reserve-panel summary {
+    font-size: 1em;
+  }
+  
+  /* Admin sections */
+  .admin-section {
+    padding: 14px;
+  }
+  
+  .admin-section h2 {
+    font-size: 1em;
+  }
+  
+  a.btn {
+    display: block;
+    text-align: center;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  h1 {
+    font-size: 1.2em;
+  }
+  
+  /* Stack table as cards on very small screens */
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+  
+  thead {
+    display: none;
+  }
+  
+  tr {
+    background: rgba(255,255,255,0.03);
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    border-left: 3px solid #00d9ff;
+  }
+  
+  td {
+    padding: 6px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #00d9ff;
+    font-size: 0.8em;
+  }
+  
+  /* Show speedups column again in card mode */
+  table td:nth-child(4) {
+    display: flex;
+  }
+}
