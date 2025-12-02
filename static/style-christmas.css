@@ -61,6 +61,28 @@ body::before {
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
 }
 
+/* Rydak head animation */
+@keyframes rydakfall {
+  0% { transform: translateY(-10vh) rotate(0deg) scale(1); opacity: 1; }
+  25% { transform: translateY(25vh) rotate(90deg) scale(1.1); }
+  50% { transform: translateY(55vh) rotate(180deg) scale(1); }
+  75% { transform: translateY(80vh) rotate(270deg) scale(1.1); }
+  100% { transform: translateY(110vh) rotate(360deg) scale(1); opacity: 0.7; }
+}
+
+.rydak {
+  position: fixed;
+  width: 50px;
+  height: 50px;
+  top: -60px;
+  z-index: 998;
+  pointer-events: none;
+  animation: rydakfall linear infinite;
+  border-radius: 50%;
+  object-fit: cover;
+  filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.6));
+}
+
 .container {
   position: relative;
   z-index: 1;
