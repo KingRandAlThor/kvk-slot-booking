@@ -86,22 +86,18 @@ button:hover { background: #00b8d4; }
 .flash.error { background: #e74c3c; color: #fff; }
 
 /* Reserve panel */
-details.reserve-panel {
+.reserve-panel {
   background: rgba(0,217,255,0.08);
   border: 1px solid #00d9ff;
   border-radius: 12px;
   padding: 16px;
   margin-bottom: 24px;
 }
-details.reserve-panel summary {
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 1.1em;
-  color: #00d9ff;
-  outline: none;
-}
-details.reserve-panel[open] summary {
+.reserve-panel h2 {
+  margin-top: 0;
   margin-bottom: 16px;
+  color: #00d9ff;
+  font-size: 1.1em;
 }
 .reserve-form { display: flex; flex-direction: column; gap: 14px; }
 select {
