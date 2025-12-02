@@ -68,6 +68,27 @@ def clear_registration_open():
     cur.execute("DELETE FROM config WHERE key = 'registration_open';")
     db.commit()
 
+def get_current_theme():
+    """Get current theme - auto-detect Christmas season or use config."""
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT value FROM config WHERE key = 'theme';")
+    row = cur.fetchone()
+    if row:
+        return row['value']
+    # Auto-detect: December = Christmas theme
+    now = datetime.now()
+    if now.month == 12:
+        return 'christmas'
+    return 'kingshot'
+
+def set_theme(theme: str):
+    """Set theme in config table."""
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('theme', ?);",(theme,))
+    db.commit()
+
 def slot_aligned(dt: datetime) -> bool:
     return dt.second == 0 and dt.minute in (0, 30)
 
@@ -190,7 +211,9 @@ def index():
     # Get event type based on weekday
     weekday = event_start.weekday()
     event_type = EVENT_TYPES.get(weekday, {'name': 'Event', 'emoji': '🗓️'})
-    return render_template('index.html', slots=slots_list, free_slots=free_slots, event_date=event_display, min_speedup=SLOT_MIN_SPEEDUP_DAYS, event_type=event_type, registrations_open=registrations_open, countdown_target=countdown_target)
+    # Get current theme
+    theme = get_current_theme()
+    return render_template('index.html', slots=slots_list, free_slots=free_slots, event_date=event_display, min_speedup=SLOT_MIN_SPEEDUP_DAYS, event_type=event_type, registrations_open=registrations_open, countdown_target=countdown_target, theme=theme)
 
 # Admin route to reset reservations and set new event date
 @app.route('/admin', methods=['GET', 'POST'])
@@ -289,6 +312,22 @@ def admin():
             clear_registration_open()
             flash('Registrations are now open immediately.', 'success')
         
+        elif action == 'set_theme':
+            new_theme = request.form.get('theme', 'kingshot').strip()
+            if new_theme in ['kingshot', 'christmas', 'auto']:
+                if new_theme == 'auto':
+                    # Remove theme config to use auto-detection
+                    db = get_db()
+                    cur = db.cursor()
+                    cur.execute("DELETE FROM config WHERE key = 'theme';")
+                    db.commit()
+                    flash('Theme set to auto-detect (Christmas in December).', 'success')
+                else:
+                    set_theme(new_theme)
+                    flash(f'Theme changed to {new_theme}.', 'success')
+            else:
+                flash('Invalid theme.', 'error')
+        
         return redirect(url_for('admin'))
     
     # GET: show admin page
@@ -300,7 +339,13 @@ def admin():
     reservations = cur.fetchall()
     # Get registration open time
     registration_open = get_registration_open()
-    return render_template('admin.html', current_date=current_date, reservation_count=reservation_count, reservations=reservations, registration_open=registration_open)
+    # Get current theme
+    theme = get_current_theme()
+    # Check if theme is in auto mode
+    cur.execute("SELECT value FROM config WHERE key = 'theme';")
+    theme_config = cur.fetchone()
+    theme_mode = 'auto' if theme_config is None else theme_config['value']
+    return render_template('admin.html', current_date=current_date, reservation_count=reservation_count, reservations=reservations, registration_open=registration_open, theme=theme, theme_mode=theme_mode)
 
 # Keep /slots as alias
 @app.route('/slots')

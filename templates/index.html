@@ -1,10 +1,15 @@
 {% extends 'layout.html' %}
 
-{% block title %}👑 {{ event_type.name }} — KINGSHOT{% endblock %}
+{% block title %}{% if theme == 'christmas' %}🎄{% else %}👑{% endif %} {{ event_type.name }} — KINGSHOT{% endblock %}
 
 {% block content %}
+  {% if theme == 'christmas' %}
+  <h1>🎄 {{ event_type.name }} Day {{ event_type.emoji }}</h1>
+  <p class="subtitle">🎅 {{ event_date }} — 00:00 to 23:59 UTC 🎁</p>
+  {% else %}
   <h1>👑 {{ event_type.name }} Day {{ event_type.emoji }}</h1>
   <p class="subtitle">⚔️ {{ event_date }} — 00:00 to 23:59 UTC ⚔️</p>
+  {% endif %}
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -71,7 +76,11 @@
   {% else %}
   <!-- Reservation form -->
   <div class="reserve-panel">
+    {% if theme == 'christmas' %}
+    <h2>🎁 Claim Your Gift Slot</h2>
+    {% else %}
     <h2>⚔️ Claim Your Battle Slot</h2>
+    {% endif %}
     <form method="post" class="reserve-form">
       <div>
         <label>Available slot</label>
@@ -91,15 +100,24 @@
         <input type="number" name="speedup_days" min="{{ min_speedup }}" value="20" required>
       </div>
       <div style="margin-top:16px;">
+        {% if theme == 'christmas' %}
+        <button type="submit">🎁 Confirm Reservation</button>
+        {% else %}
         <button type="submit">⚔️ Confirm Reservation</button>
+        {% endif %}
       </div>
     </form>
   </div>
   {% endif %}
 
   <!-- Slots table -->
+  {% if theme == 'christmas' %}
+  <div class="crown-divider">🎄 ❄️ 🎄</div>
+  <h2 style="margin-top:16px;">🎅 Gift Schedule</h2>
+  {% else %}
   <div class="crown-divider">👑 ⚔️ 👑</div>
   <h2 style="margin-top:16px;">🗡️ Battle Schedule</h2>
+  {% endif %}
   <table>
     <thead>
       <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th><th>Action</th></tr>

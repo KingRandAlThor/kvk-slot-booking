@@ -4,14 +4,36 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}KINGSHOT{% endblock %}</title>
+    {% if theme == 'christmas' %}
+    <link rel="stylesheet" href="/static/style-christmas.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎄</text></svg>">
+    {% else %}
     <link rel="stylesheet" href="/static/style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👑</text></svg>">
+    {% endif %}
   </head>
   <body>
+    {% if theme == 'christmas' %}
+    <!-- Snowflakes -->
+    <div class="snowflake" style="left: 5%; animation-duration: 8s; animation-delay: 0s;">❄</div>
+    <div class="snowflake" style="left: 15%; animation-duration: 12s; animation-delay: 2s;">❅</div>
+    <div class="snowflake" style="left: 25%; animation-duration: 10s; animation-delay: 4s;">❆</div>
+    <div class="snowflake" style="left: 35%; animation-duration: 14s; animation-delay: 1s;">❄</div>
+    <div class="snowflake" style="left: 45%; animation-duration: 9s; animation-delay: 3s;">❅</div>
+    <div class="snowflake" style="left: 55%; animation-duration: 11s; animation-delay: 5s;">❆</div>
+    <div class="snowflake" style="left: 65%; animation-duration: 13s; animation-delay: 2s;">❄</div>
+    <div class="snowflake" style="left: 75%; animation-duration: 8s; animation-delay: 4s;">❅</div>
+    <div class="snowflake" style="left: 85%; animation-duration: 10s; animation-delay: 0s;">❆</div>
+    <div class="snowflake" style="left: 95%; animation-duration: 12s; animation-delay: 3s;">❄</div>
+    {% endif %}
     <div class="container">
       {% block content %}{% endblock %}
       <footer>
+        {% if theme == 'christmas' %}
+        🎄 KINGSHOT Slot Booking © 2025 🎅 Merry Christmas! 🎄
+        {% else %}
         👑 KINGSHOT Slot Booking © 2025 👑
+        {% endif %}
       </footer>
     </div>
   </body>

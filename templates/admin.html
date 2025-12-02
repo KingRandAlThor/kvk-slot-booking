@@ -97,6 +97,42 @@
     {% endif %}
   </div>
 
+  <div class="admin-section">
+    <h2>🎨 Theme Settings</h2>
+    <div class="settings-info">
+      <p><strong>Current theme:</strong> 
+        {% if theme == 'christmas' %}
+        <span style="color:#c41e3a;">🎄 Christmas</span>
+        {% else %}
+        <span style="color:#daa520;">👑 KINGSHOT</span>
+        {% endif %}
+      </p>
+      <p><strong>Mode:</strong> 
+        {% if theme_mode == 'auto' %}
+        <span style="color:#7fff00;">Auto (Christmas in December)</span>
+        {% else %}
+        <span style="color:#ff6b35;">Manual: {{ theme_mode }}</span>
+        {% endif %}
+      </p>
+    </div>
+    <form method="post" class="admin-form">
+      <input type="hidden" name="action" value="set_theme">
+      <div>
+        <label>Select Theme</label>
+        <select name="theme" required>
+          <option value="auto" {% if theme_mode == 'auto' %}selected{% endif %}>🔄 Auto (Christmas in December)</option>
+          <option value="kingshot" {% if theme_mode == 'kingshot' %}selected{% endif %}>👑 KINGSHOT (Royal Gold)</option>
+          <option value="christmas" {% if theme_mode == 'christmas' %}selected{% endif %}>🎄 Christmas (Holiday)</option>
+        </select>
+      </div>
+      <div>
+        <label>Admin password</label>
+        <input type="password" name="password" placeholder="Enter password" required>
+      </div>
+      <button type="submit" style="background:linear-gradient(135deg, #228b22, #c41e3a);">🎨 Change Theme</button>
+    </form>
+  </div>
+
   <div style="margin-top:32px;">
     <a class="btn" href="{{ url_for('index') }}">⚔️ Return to Battle</a>
   </div>
