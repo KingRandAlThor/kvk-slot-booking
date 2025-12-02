@@ -31,6 +31,15 @@ body::before {
   100% { transform: translateY(110vh) rotate(360deg); opacity: 0.3; }
 }
 
+/* Gift animation - swaying fall */
+@keyframes giftfall {
+  0% { transform: translateY(-10vh) rotate(-5deg); opacity: 1; }
+  25% { transform: translateY(25vh) rotate(5deg); }
+  50% { transform: translateY(55vh) rotate(-5deg); }
+  75% { transform: translateY(80vh) rotate(5deg); }
+  100% { transform: translateY(110vh) rotate(-5deg); opacity: 0.5; }
+}
+
 .snowflake {
   position: fixed;
   color: #fff;
@@ -40,6 +49,16 @@ body::before {
   pointer-events: none;
   animation: snowfall linear infinite;
   text-shadow: 0 0 5px #fff;
+}
+
+.gift {
+  position: fixed;
+  font-size: 1.2em;
+  top: -5vh;
+  z-index: 999;
+  pointer-events: none;
+  animation: giftfall ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.5));
 }
 
 .container {
