@@ -332,10 +332,11 @@ def admin():
     
     # GET: show admin page
     current_date = get_event_date()
-    cur.execute('SELECT COUNT(*) FROM reservations;')
+    # Only count and show reservations for the current event date
+    cur.execute("SELECT COUNT(*) FROM reservations WHERE slot_start LIKE ?;", (current_date + '%',))
     reservation_count = cur.fetchone()[0]
-    # Get all reservations for the list
-    cur.execute('SELECT id, slot_start, player_name, speedup_days FROM reservations ORDER BY slot_start;')
+    # Get reservations for the current event date only
+    cur.execute("SELECT id, slot_start, player_name, speedup_days FROM reservations WHERE slot_start LIKE ? ORDER BY slot_start;", (current_date + '%',))
     reservations = cur.fetchall()
     # Get registration open time
     registration_open = get_registration_open()
@@ -356,6 +357,29 @@ def slots():
 @app.route('/reserve')
 def reserve():
     return redirect(url_for('index'))
+
+# Rydak Wheel - "Quel type de Rydak es-tu ?"
+@app.route('/rydak-wheel')
+def rydak_wheel():
+    # List of all Rydak images with fun names
+    rydaks = [
+        {'file': 'Rydak1.png', 'name': 'Don Rydak 🎩'},
+        {'file': 'Rydak2.png', 'name': 'Rydaddy 😎'},
+        {'file': 'Rydak3.png', 'name': 'Rural Rydak 🌾'},
+        {'file': 'Rydak4.png', 'name': 'Urban Rydak 🏙️'},
+        {'file': 'Rydak5.png', 'name': 'Hillbilly Rydak 🤠'},
+        {'file': 'Rydak6.png', 'name': 'Rich Rydak 💰'},
+        {'file': 'Rydak7.png', 'name': 'Homeless Rydak 🛒'},
+        {'file': 'Rydak8.png', 'name': 'Crazy Rydak 🤪'},
+        {'file': 'Rydak9.png', 'name': 'Professor Rydak 🎓'},
+        {'file': 'Rydak10.png', 'name': 'Trailer Park Rydak 🏕️'},
+        {'file': 'Rydak111.png', 'name': 'Hunter Rydak 🦌'},
+        {'file': 'Rydak12.png', 'name': 'Rydak the Clown 🤡'},
+        {'file': 'Rydak13.png', 'name': 'Jester Rydak 🃏'},
+        {'file': 'Rydak14.png', 'name': 'Rydaddy 👑'},
+    ]
+    theme = get_current_theme()
+    return render_template('rydak-wheel.html', rydaks=rydaks, theme=theme)
 
 @app.teardown_appcontext
 def close_connection(exception):

@@ -77,9 +77,9 @@
   <!-- Reservation form -->
   <div class="reserve-panel">
     {% if theme == 'christmas' %}
-    <h2>🎁 Claim Your Gift Slot</h2>
+    <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> 🎁 Claim Your Gift Slot</h2>
     {% else %}
-    <h2>⚔️ Claim Your Battle Slot</h2>
+    <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> ⚔️ Claim Your Battle Slot</h2>
     {% endif %}
     <form method="post" class="reserve-form">
       <div>
