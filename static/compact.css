@@ -1,0 +1,398 @@
+/* Optimizations pour un affichage plus compact et épuré */
+
+/* Layout en grille pour les formulaires de réservation */
+.reserve-forms-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+@media (max-width: 900px) {
+  .reserve-forms-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.reserve-panel {
+  background: linear-gradient(135deg, rgba(218, 165, 32, 0.05) 0%, rgba(139, 69, 19, 0.03) 100%);
+  border: 1px solid rgba(218, 165, 32, 0.2);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+
+.reserve-panel h2 {
+  margin-top: 0;
+  margin-bottom: 14px;
+  font-size: 1.2em;
+}
+
+/* Sections compactes */
+.selection-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+  .selection-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.selection-section {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  border: 1px solid rgba(218, 165, 32, 0.1);
+}
+
+.selection-section h2 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-size: 1.2em;
+}
+
+.selection-section table {
+  margin-top: 0;
+}
+
+/* Divider plus compact */
+.crown-divider {
+  text-align: center;
+  color: #daa520;
+  font-size: 1.3em;
+  margin: 16px 0 12px 0;
+  opacity: 0.7;
+}
+
+/* Boutons plus compacts */
+button[type="submit"] {
+  padding: 10px 18px;
+  font-size: 0.95em;
+}
+
+/* Bouton List 2 - petit badge discret */
+.btn-list2 {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(218, 165, 32, 0.15);
+  color: #daa520;
+  border: 1px solid rgba(218, 165, 32, 0.3);
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-list2:hover {
+  background: rgba(218, 165, 32, 0.25);
+  border-color: rgba(218, 165, 32, 0.5);
+  color: #ffd700;
+  transform: translateX(2px);
+}
+
+.btn-list2:active {
+  transform: translateX(0);
+}
+
+/* Ancien style btn-switch (conservé pour compatibilité) */
+.btn-switch {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(135deg, #b30000, #ff3b3b);
+  border: 2px solid #ffd38a; /* or clair */
+  color: #fff;
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: bold;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+
+  /* Ombre dorée type guirlande */
+  box-shadow:
+    0 0 10px rgba(255, 200, 120, 0.7),
+    inset 0 0 8px rgba(255, 255, 255, 0.3);
+
+  transition: 0.25s ease;
+}
+
+/* Effet au survol : plus lumineux, légèrement animé */
+.btn-switch:hover {
+  background: linear-gradient(135deg, #ff4b4b, #ff9090);
+  transform: translateY(-2px);
+  box-shadow:
+    0 0 15px rgba(255, 220, 150, 0.9),
+    0 0 30px rgba(255, 100, 100, 0.5),
+    inset 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* Effet "clic" */
+.btn-switch:active {
+  transform: translateY(1px);
+  box-shadow:
+    0 0 6px rgba(255, 180, 120, 0.7),
+    inset 0 0 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Optionnel : petit effet neige au-dessus du bouton */
+.btn-switch:hover::after {
+  content: "❄";
+  position: absolute;
+  font-size: 22px;
+  margin-left: 10px;
+  animation: fall 0.8s linear forwards;
+  pointer-events: none;
+}
+
+@keyframes fall {
+  0% { opacity: 1; transform: translateY(-10px) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(15px) rotate(40deg); }
+}
+
+/* Pour le thème normal (non-Noël) */
+body:not(.christmas-theme) .btn-switch {
+  background: linear-gradient(135deg, #daa520 0%, #b8860b 50%, #996515 100%);
+  border-color: rgba(218, 165, 32, 0.3);
+  font-family: 'Cinzel', serif;
+  box-shadow: 
+    0 2px 10px rgba(218, 165, 32, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+body:not(.christmas-theme) .btn-switch:hover {
+  background: linear-gradient(135deg, #ffd700 0%, #daa520 50%, #b8860b 100%);
+  box-shadow: 
+    0 4px 15px rgba(218, 165, 32, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border-color: rgba(218, 165, 32, 0.5);
+}
+
+/* Tables plus compactes dans les sections */
+.selection-section td,
+.selection-section th {
+  padding: 8px 10px;
+}
+
+/* Fix pour les calendriers date/time qui sont bloqués par les décorations */
+input[type="date"],
+input[type="time"] {
+  position: relative;
+  z-index: 1500 !important;
+  /* Style personnalisé pour les inputs */
+  background: linear-gradient(135deg, rgba(218, 165, 32, 0.08) 0%, rgba(139, 69, 19, 0.05) 100%);
+  border: 2px solid rgba(218, 165, 32, 0.3);
+  color: #daa520;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-radius: 10px;
+  box-shadow: 
+    0 2px 8px rgba(218, 165, 32, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+input[type="date"]:hover,
+input[type="time"]:hover {
+  border-color: rgba(218, 165, 32, 0.5);
+  background: linear-gradient(135deg, rgba(218, 165, 32, 0.12) 0%, rgba(139, 69, 19, 0.08) 100%);
+  box-shadow: 
+    0 3px 12px rgba(218, 165, 32, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+input[type="date"]:focus,
+input[type="time"]:focus {
+  border-color: #daa520;
+  background: linear-gradient(135deg, rgba(218, 165, 32, 0.15) 0%, rgba(139, 69, 19, 0.1) 100%);
+  box-shadow: 
+    0 0 0 3px rgba(218, 165, 32, 0.2),
+    0 4px 15px rgba(218, 165, 32, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  outline: none;
+}
+
+/* S'assurer que les popups de calendrier sont au-dessus de tout */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+  position: relative;
+  z-index: 1500 !important;
+  cursor: pointer;
+  /* Styliser l'icône du calendrier */
+  filter: invert(62%) sepia(84%) saturate(468%) hue-rotate(3deg) brightness(92%) contrast(87%);
+  width: 20px;
+  height: 20px;
+  transition: all 0.2s ease;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  filter: invert(78%) sepia(98%) saturate(1676%) hue-rotate(358deg) brightness(104%) contrast(101%);
+  transform: scale(1.1);
+}
+
+/* Style du texte dans les inputs date/time */
+input[type="date"]::-webkit-datetime-edit,
+input[type="time"]::-webkit-datetime-edit {
+  color: #daa520;
+  font-weight: 600;
+}
+
+input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+/* Style des champs individuels (jour, mois, année, heure, minute) */
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="time"]::-webkit-datetime-edit-text {
+  color: rgba(218, 165, 32, 0.5);
+  padding: 0 2px;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field,
+input[type="time"]::-webkit-datetime-edit-hour-field,
+input[type="time"]::-webkit-datetime-edit-minute-field {
+  color: #daa520;
+  font-weight: 700;
+  background: rgba(218, 165, 32, 0.1);
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin: 0 1px;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field:focus,
+input[type="date"]::-webkit-datetime-edit-day-field:focus,
+input[type="date"]::-webkit-datetime-edit-year-field:focus,
+input[type="time"]::-webkit-datetime-edit-hour-field:focus,
+input[type="time"]::-webkit-datetime-edit-minute-field:focus {
+  background: rgba(218, 165, 32, 0.25);
+  color: #ffd700;
+  outline: none;
+}
+
+/* Flatpickr custom styling */
+.flatpickr-calendar {
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.98) 0%, rgba(40, 30, 20, 0.98) 100%) !important;
+  border: 2px solid rgba(218, 165, 32, 0.4) !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(218, 165, 32, 0.3) !important;
+}
+
+.flatpickr-months {
+  background: rgba(218, 165, 32, 0.15) !important;
+  border-radius: 10px 10px 0 0 !important;
+}
+
+.flatpickr-current-month {
+  color: #daa520 !important;
+  font-weight: 700 !important;
+}
+
+.flatpickr-month {
+  color: #daa520 !important;
+}
+
+.flatpickr-weekday {
+  color: rgba(218, 165, 32, 0.8) !important;
+  font-weight: 600 !important;
+}
+
+.flatpickr-day {
+  color: #ccc !important;
+  border-radius: 6px !important;
+  transition: all 0.2s ease !important;
+}
+
+.flatpickr-day:hover:not(.flatpickr-disabled) {
+  background: rgba(218, 165, 32, 0.2) !important;
+  border-color: rgba(218, 165, 32, 0.5) !important;
+  color: #ffd700 !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+  background: linear-gradient(135deg, #daa520 0%, #b8860b 100%) !important;
+  border-color: #daa520 !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 10px rgba(218, 165, 32, 0.5) !important;
+}
+
+.flatpickr-day.today {
+  border-color: rgba(218, 165, 32, 0.6) !important;
+  background: rgba(218, 165, 32, 0.1) !important;
+  color: #ffd700 !important;
+  font-weight: 600 !important;
+}
+
+.flatpickr-day.today:hover {
+  background: rgba(218, 165, 32, 0.25) !important;
+}
+
+.flatpickr-time {
+  border-top: 2px solid rgba(218, 165, 32, 0.3) !important;
+  background: rgba(218, 165, 32, 0.05) !important;
+}
+
+.flatpickr-time input {
+  color: #daa520 !important;
+  font-weight: 700 !important;
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(218, 165, 32, 0.3) !important;
+  border-radius: 6px !important;
+}
+
+.flatpickr-time input:hover {
+  background: rgba(218, 165, 32, 0.1) !important;
+}
+
+.flatpickr-time input:focus {
+  border-color: #daa520 !important;
+  background: rgba(218, 165, 32, 0.15) !important;
+}
+
+.flatpickr-time .flatpickr-time-separator {
+  color: rgba(218, 165, 32, 0.7) !important;
+  font-weight: 700 !important;
+}
+
+.flatpickr-prev-month:hover svg,
+.flatpickr-next-month:hover svg {
+  fill: #daa520 !important;
+}
+
+.flatpickr-prev-month svg,
+.flatpickr-next-month svg {
+  fill: rgba(218, 165, 32, 0.6) !important;
+  transition: fill 0.2s ease !important;
+}
+
+/* Animation d'ouverture du calendrier */
+.flatpickr-calendar.open {
+  animation: fadeInCalendar 0.3s ease !important;
+}
+
+@keyframes fadeInCalendar {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

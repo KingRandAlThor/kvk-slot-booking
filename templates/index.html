@@ -74,30 +74,152 @@
     })();
   </script>
   {% else %}
-  <!-- Reservation form -->
+  
+  {% if not selection_state or not selection_state.completed %}
+  <!-- Formulaire de pré-inscription (avant sélection) -->
   <div class="reserve-panel">
     {% if theme == 'christmas' %}
-    <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> 🎁 Claim Your Gift Slot</h2>
+    <h2>🎁 Pre-register for the draw</h2>
     {% else %}
-    <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> ⚔️ Claim Your Battle Slot</h2>
+    <h2>⚔️ Pre-register for the draw</h2>
+    {% endif %}
+    <p style="margin-top:4px;">Top {{ selection_top_n }} by speedups are selected when the timer ends. Others go to the waitlist.</p>
+    {% if is_dual_list %}
+      <p style="margin-top:4px;"><strong>⚠️ If you're on the waitlist after selection, you can switch to the secondary list to guarantee a slot!</strong></p>
+    {% endif %}
+    {% if selection_state and selection_state.ready_at %}
+      <p class="countdown-note">Selection locks at <strong>{{ selection_state.ready_at }}</strong> UTC.</p>
     {% endif %}
     <form method="post" class="reserve-form">
-      <div>
-        <label>Available slot</label>
-        <select name="slot" required>
-          <option value="">-- Select a slot --</option>
-          {% for s in free_slots %}
-            <option value="{{ s.iso }}">{{ s.slot.strftime('%H:%M') }} UTC</option>
-          {% endfor %}
-        </select>
-      </div>
+      <input type="hidden" name="action" value="preregister">
       <div>
         <label>Player name</label>
         <input type="text" name="player_name" placeholder="Your in-game name" required>
       </div>
       <div>
-        <label>Speedup days (min. {{ min_speedup }})</label>
-        <input type="number" name="speedup_days" min="{{ min_speedup }}" value="20" required>
+        <label>Speedup days</label>
+        <input type="number" name="speedup_days" min="1" value="20" required>
+      </div>
+      <div style="margin-top:16px;">
+        {% if theme == 'christmas' %}
+        <button type="submit">🎁 Pre-register for draw</button>
+        {% else %}
+        <button type="submit">⚔️ Pre-register for draw</button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+  {% else %}
+  <!-- Formulaires de réservation (après sélection) -->
+  {% if is_dual_list and selected_players_secondary %}
+  <div class="reserve-forms-grid">
+    <!-- Formulaire Main List -->
+    <div class="reserve-panel">
+      {% if theme == 'christmas' %}
+      <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> 🎁 Main List</h2>
+      {% else %}
+      <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> ⚔️ Main List</h2>
+      {% endif %}
+      <form method="post" class="reserve-form">
+        <input type="hidden" name="action" value="reserve">
+        <div>
+          <label>Available slot</label>
+          <select name="slot" required>
+            <option value="">-- Select a slot --</option>
+            {% for s in free_slots_main %}
+              <option value="{{ s.iso }}">{{ s.slot.strftime('%H:%M') }} UTC</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Selected player</label>
+          <select name="player_name" required>
+            <option value="">-- Choose your name --</option>
+            {% if selected_players %}
+              {% for p in selected_players %}
+                <option value="{{ p.player_name }}">{{ p.player_name }} ({{ p.speedup_days }} days)</option>
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+        <div style="margin-top:16px;">
+          {% if theme == 'christmas' %}
+          <button type="submit">🎁 Confirm Reservation</button>
+          {% else %}
+          <button type="submit">⚔️ Confirm Reservation</button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+
+    <!-- Formulaire Secondary List -->
+    <div class="reserve-panel">
+      {% if theme == 'christmas' %}
+      <h2>🎁 Secondary List</h2>
+      {% else %}
+      <h2>⚔️ Secondary List</h2>
+      {% endif %}
+      <form method="post" class="reserve-form">
+        <input type="hidden" name="action" value="reserve">
+        <div>
+          <label>Available slot</label>
+          <select name="slot" required>
+            <option value="">-- Select a slot --</option>
+            {% for s in free_slots_secondary %}
+              <option value="{{ s.iso }}">{{ s.slot.strftime('%H:%M') }} UTC</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Selected player</label>
+          <select name="player_name" required>
+            <option value="">-- Choose your name --</option>
+            {% if selected_players_secondary %}
+              {% for p in selected_players_secondary %}
+                <option value="{{ p.player_name }}">{{ p.player_name }}</option>
+              {% endfor %}
+            {% endif %}
+          </select>
+        </div>
+        <div style="margin-top:16px;">
+          {% if theme == 'christmas' %}
+          <button type="submit">🎁 Confirm Reservation</button>
+          {% else %}
+          <button type="submit">⚔️ Confirm Reservation</button>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+  {% else %}
+  <!-- Formulaire Main List seul -->
+  <div class="reserve-panel">
+    {% if theme == 'christmas' %}
+    <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> 🎁 Confirm slot</h2>
+    {% else %}
+    <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> ⚔️ Confirm slot</h2>
+    {% endif %}
+    <form method="post" class="reserve-form">
+      <input type="hidden" name="action" value="reserve">
+      <div>
+        <label>Available slot</label>
+        <select name="slot" required>
+          <option value="">-- Select a slot --</option>
+          {% for s in free_slots_main %}
+            <option value="{{ s.iso }}">{{ s.slot.strftime('%H:%M') }} UTC</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Selected player</label>
+        <select name="player_name" required>
+          <option value="">-- Choose your name --</option>
+          {% if selected_players %}
+            {% for p in selected_players %}
+              <option value="{{ p.player_name }}">{{ p.player_name }} ({{ p.speedup_days }} days)</option>
+            {% endfor %}
+          {% endif %}
+        </select>
       </div>
       <div style="margin-top:16px;">
         {% if theme == 'christmas' %}
@@ -109,21 +231,23 @@
     </form>
   </div>
   {% endif %}
+  {% endif %}
 
-  <!-- Slots table -->
+
+  <!-- Slots table Main List -->
   {% if theme == 'christmas' %}
   <div class="crown-divider">🎄 ❄️ 🎄</div>
-  <h2 style="margin-top:16px;">🎅 Gift Schedule</h2>
+  <h2 style="margin-top:16px;">🎅 Main List Schedule</h2>
   {% else %}
   <div class="crown-divider">👑 ⚔️ 👑</div>
-  <h2 style="margin-top:16px;">🗡️ Battle Schedule</h2>
+  <h2 style="margin-top:16px;">🗡️ Main List Schedule</h2>
   {% endif %}
   <table>
     <thead>
       <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th><th>Action</th></tr>
     </thead>
     <tbody>
-      {% for s in slots %}
+      {% for s in slots_main %}
       <tr>
         <td data-label="Time">{{ s.slot.strftime('%H:%M') }} UTC</td>
         <td data-label="Status">
@@ -144,7 +268,7 @@
                 <input type="hidden" name="old_slot" value="{{ s.iso }}">
                 <select name="new_slot" required>
                   <option value="">-- New slot --</option>
-                  {% for f in free_slots %}
+                  {% for f in free_slots_main %}
                     <option value="{{ f.iso }}">{{ f.slot.strftime('%H:%M') }} UTC</option>
                   {% endfor %}
                 </select>
@@ -160,4 +284,150 @@
       {% endfor %}
     </tbody>
   </table>
+
+  {% if is_dual_list %}
+  <!-- Slots table Secondary List -->
+  {% if theme == 'christmas' %}
+  <div class="crown-divider" style="margin-top:24px;">🎄 ❄️ 🎄</div>
+  <h2 style="margin-top:16px;">🎅 Secondary List Schedule</h2>
+  {% else %}
+  <div class="crown-divider" style="margin-top:24px;">👑 ⚔️ 👑</div>
+  <h2 style="margin-top:16px;">🗡️ Secondary List Schedule</h2>
+  {% endif %}
+  <table>
+    <thead>
+      <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th><th>Action</th></tr>
+    </thead>
+    <tbody>
+      {% for s in slots_secondary %}
+      <tr>
+        <td data-label="Time">{{ s.slot.strftime('%H:%M') }} UTC</td>
+        <td data-label="Status">
+          {% if s.reserved %}
+            <span class="badge reserve">Reserved</span>
+          {% else %}
+            <span class="badge libre">Available</span>
+          {% endif %}
+        </td>
+        <td data-label="Player">{{ s.player if s.player else '—' }}</td>
+        <td data-label="Speedups">{{ (s.days|string ~ ' days') if s.days else '—' }}</td>
+        <td data-label="Action">
+          {% if s.reserved %}
+            <details class="move-dropdown">
+              <summary class="btn-move">🔀</summary>
+              <form method="post" class="move-form">
+                <input type="hidden" name="action" value="move">
+                <input type="hidden" name="old_slot" value="{{ s.iso }}">
+                <select name="new_slot" required>
+                  <option value="">-- New slot --</option>
+                  {% for f in free_slots_secondary %}
+                    <option value="{{ f.iso }}">{{ f.slot.strftime('%H:%M') }} UTC</option>
+                  {% endfor %}
+                </select>
+                <input type="password" name="password" placeholder="Admin pwd" required>
+                <button type="submit">✔️</button>
+              </form>
+            </details>
+          {% else %}
+            —
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <div class="crown-divider">⭐ Selection ⭐</div>
+  
+  <div class="selection-grid">
+    <!-- Selected Players -->
+    <div class="selection-section">
+      <h2>Selected (Top {{ selection_top_n }})</h2>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Player</th><th>Speedups</th>{% if is_dual_list and selection_state and selection_state.completed %}<th>Action</th>{% endif %}</tr>
+        </thead>
+        <tbody>
+          {% if selected_players %}
+            {% for p in selected_players %}
+              <tr>
+                <td data-label="#">{{ loop.index }}</td>
+                <td data-label="Player">{{ p.player_name }}</td>
+                <td data-label="Speedups">{{ p.speedup_days }} days</td>
+                {% if is_dual_list and selection_state and selection_state.completed %}
+                <td data-label="Action">
+                  <form method="post" style="display:inline;" onsubmit="return confirm('Switch {{ p.player_name }} to List 2?');">
+                    <input type="hidden" name="action" value="switch_to_secondary">
+                    <input type="hidden" name="player_name" value="{{ p.player_name }}">
+                    <button type="submit" class="btn-list2">→ List 2</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="{% if is_dual_list and selection_state and selection_state.completed %}4{% else %}3{% endif %}">No one selected yet.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Waitlist -->
+    <div class="selection-section">
+      <h2>Waitlist</h2>
+      <table>
+        <thead>
+          <tr><th>Pos</th><th>Player</th><th>Speedups</th>{% if is_dual_list and selection_state and selection_state.completed %}<th>Action</th>{% endif %}</tr>
+        </thead>
+        <tbody>
+          {% if waitlist_players %}
+            {% for p in waitlist_players %}
+              <tr>
+                <td data-label="Pos">{{ p.waitlist_position }}</td>
+                <td data-label="Player">{{ p.player_name }}</td>
+                <td data-label="Speedups">{{ p.speedup_days }} days</td>
+                {% if is_dual_list and selection_state and selection_state.completed %}
+                <td data-label="Action">
+                  <form method="post" style="display:inline;" onsubmit="return confirm('Switch {{ p.player_name }} to List 2?');">
+                    <input type="hidden" name="action" value="switch_to_secondary">
+                    <input type="hidden" name="player_name" value="{{ p.player_name }}">
+                    <button type="submit" class="btn-list2">→ List 2</button>
+                  </form>
+                </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="{% if is_dual_list and selection_state and selection_state.completed %}4{% else %}3{% endif %}">No one on the waitlist.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  
+  {% if is_dual_list %}
+  <div class="selection-section" style="margin-top:16px;">
+    <h2>Secondary List (Open to all)</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Player</th><th>Speedups</th></tr>
+      </thead>
+      <tbody>
+        {% if selected_players_secondary %}
+          {% for p in selected_players_secondary %}
+            <tr>
+              <td data-label="#">{{ loop.index }}</td>
+              <td data-label="Player">{{ p.player_name }}</td>
+              <td data-label="Speedups">{{ p.speedup_days }} days</td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr><td colspan="3">No one registered yet.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% endif %}
 {% endblock %}

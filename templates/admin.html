@@ -14,9 +14,27 @@
   {% endwith %}
 
   <div class="admin-section">
-    <h2>⚔️ Event & Registration Settings</h2>
+    <h2>📅 Select Event Day</h2>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
+      <a href="{{ url_for('admin', day='monday') }}" style="text-decoration: none;">
+        <button type="button" style="{% if selected_day == 'monday' %}background: #daa520; color: #000;{% else %}background: #444;{% endif %}">
+          🏗️ Monday - Construction
+        </button>
+      </a>
+      <a href="{{ url_for('admin', day='tuesday') }}" style="text-decoration: none;">
+        <button type="button" style="{% if selected_day == 'tuesday' %}background: #daa520; color: #000;{% else %}background: #444;{% endif %}">
+          🔬 Tuesday - Research
+        </button>
+      </a>
+      <a href="{{ url_for('admin', day='thursday') }}" style="text-decoration: none;">
+        <button type="button" style="{% if selected_day == 'thursday' %}background: #daa520; color: #000;{% else %}background: #444;{% endif %}">
+          ⚔️ Thursday - Troop Training (Dual List)
+        </button>
+      </a>
+    </div>
     
     <div class="settings-info">
+      <p><strong>Managing:</strong> <span style="color:#daa520; text-transform: capitalize;">{{ selected_day }}</span></p>
       <p><strong>Event Date:</strong> <span style="color:#daa520;">{{ current_date }}</span></p>
       <p><strong>Total reservations:</strong> {{ reservation_count }}</p>
       {% if registration_open %}
@@ -28,6 +46,7 @@
     
     <form method="post" class="admin-form" style="margin-top:16px;">
       <input type="hidden" name="action" value="set_event_settings">
+      <input type="hidden" name="selected_day" value="{{ selected_day }}">
       
       <div class="form-row">
         <div class="form-col">
@@ -62,13 +81,14 @@
 
   <div class="admin-section">
     <h2>🗡️ Reset Reservations Only</h2>
-    <form method="post" class="admin-form" onsubmit="return confirm('Are you sure you want to delete all reservations?');">
+    <form method="post" class="admin-form" onsubmit="return confirm('Are you sure you want to delete all reservations for {{ selected_day }}?');">
       <input type="hidden" name="action" value="reset">
+      <input type="hidden" name="selected_day" value="{{ selected_day }}">
       <div>
         <label>Admin password</label>
         <input type="password" name="password" placeholder="Enter password" required>
       </div>
-      <button type="submit" style="background:#e74c3c;">🗑️ Clear all reservations</button>
+      <button type="submit" style="background:#e74c3c;">🗑️ Clear all reservations for {{ selected_day }}</button>
     </form>
   </div>
 
@@ -77,13 +97,29 @@
     {% if reservations and reservations|length > 0 %}
     <form method="post" class="admin-form" onsubmit="return confirm('Delete this reservation?');">
       <input type="hidden" name="action" value="delete_one">
+      <input type="hidden" name="selected_day" value="{{ selected_day }}">
       <div>
         <label>Select reservation to delete</label>
         <select name="reservation_id" required>
           <option value="">-- Select --</option>
-          {% for r in reservations %}
-            <option value="{{ r['id'] }}">{{ r['slot_start'][:16] }} - {{ r['player_name'] }} ({{ r['speedup_days'] }} days)</option>
-          {% endfor %}
+          {% set main_list_reservations = reservations | selectattr('list_type', 'equalto', 'main') | list %}
+          {% set secondary_list_reservations = reservations | selectattr('list_type', 'equalto', 'secondary') | list %}
+          
+          {% if main_list_reservations %}
+            <optgroup label="📋 Main List">
+            {% for r in main_list_reservations %}
+              <option value="{{ r['id'] }}">[Main] {{ r['slot_start'][:16] }} - {{ r['player_name'] }} ({{ r['speedup_days'] }} days)</option>
+            {% endfor %}
+            </optgroup>
+          {% endif %}
+          
+          {% if secondary_list_reservations %}
+            <optgroup label="📋 Secondary List">
+            {% for r in secondary_list_reservations %}
+              <option value="{{ r['id'] }}">[List 2] {{ r['slot_start'][:16] }} - {{ r['player_name'] }} ({{ r['speedup_days'] }} days)</option>
+            {% endfor %}
+            </optgroup>
+          {% endif %}
         </select>
       </div>
       <div>
@@ -117,6 +153,7 @@
     </div>
     <form method="post" class="admin-form">
       <input type="hidden" name="action" value="set_theme">
+      <input type="hidden" name="selected_day" value="{{ selected_day }}">
       <div>
         <label>Select Theme</label>
         <select name="theme" required>
