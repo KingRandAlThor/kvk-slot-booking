@@ -54,6 +54,32 @@ def init_schema(db):
         """
     )
     
+    # Create reservations table
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS reservations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_date TEXT NOT NULL,
+            event_day TEXT DEFAULT 'monday',
+            player_name TEXT NOT NULL,
+            slot_index INTEGER NOT NULL,
+            speedup_days INTEGER NOT NULL,
+            reserved_at TEXT NOT NULL,
+            list_type TEXT DEFAULT 'main'
+        );
+        """
+    )
+    
+    # Create config table
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS config (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+        """
+    )
+    
     # Create training_players table for KVK Training team balancer
     cur.execute(
         """
@@ -62,6 +88,9 @@ def init_schema(db):
             name TEXT NOT NULL,
             power REAL NOT NULL,
             alliance TEXT NOT NULL,
+            infantry_tg INTEGER DEFAULT 0,
+            archery_tg INTEGER DEFAULT 0,
+            cavalry_tg INTEGER DEFAULT 0,
             team INTEGER DEFAULT 0,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
@@ -789,13 +818,31 @@ def kvk_training():
                 power = 0
             alliance = request.form.get('alliance', '').strip().upper()[:3]
             
+            # Get Infantry TG
+            try:
+                infantry_tg = int(request.form.get('infantry_tg', 0))
+            except ValueError:
+                infantry_tg = 0
+            
+            # Get Archery TG
+            try:
+                archery_tg = int(request.form.get('archery_tg', 0))
+            except ValueError:
+                archery_tg = 0
+            
+            # Get Cavalry TG
+            try:
+                cavalry_tg = int(request.form.get('cavalry_tg', 0))
+            except ValueError:
+                cavalry_tg = 0
+            
             if not name or power <= 0 or len(alliance) != 3:
                 flash('Please fill all fields correctly (Alliance must be 3 letters).', 'error')
             else:
                 # Add player and auto-balance
                 cur.execute(
-                    'INSERT INTO training_players (name, power, alliance, team) VALUES (?, ?, ?, ?);',
-                    (name, power, alliance, 0)  # Team 0 = unassigned
+                    'INSERT INTO training_players (name, power, alliance, infantry_tg, archery_tg, cavalry_tg, team) VALUES (?, ?, ?, ?, ?, ?, ?);',
+                    (name, power, alliance, infantry_tg, archery_tg, cavalry_tg, 0)  # Team 0 = unassigned
                 )
                 db.commit()
                 
@@ -836,12 +883,12 @@ def kvk_training():
         return redirect(url_for('kvk_training'))
     
     # GET: Fetch teams
-    cur.execute('SELECT id, name, power, alliance, team FROM training_players ORDER BY power DESC;')
+    cur.execute('SELECT id, name, power, alliance, infantry_tg, archery_tg, cavalry_tg, team FROM training_players ORDER BY power DESC;')
     players = cur.fetchall()
     
-    team1 = [{'id': p['id'], 'name': p['name'], 'power': p['power'], 'alliance': p['alliance']} 
+    team1 = [{'id': p['id'], 'name': p['name'], 'power': p['power'], 'alliance': p['alliance'], 'infantry_tg': p['infantry_tg'], 'archery_tg': p['archery_tg'], 'cavalry_tg': p['cavalry_tg']} 
              for p in players if p['team'] == 1]
-    team2 = [{'id': p['id'], 'name': p['name'], 'power': p['power'], 'alliance': p['alliance']} 
+    team2 = [{'id': p['id'], 'name': p['name'], 'power': p['power'], 'alliance': p['alliance'], 'infantry_tg': p['infantry_tg'], 'archery_tg': p['archery_tg'], 'cavalry_tg': p['cavalry_tg']} 
              for p in players if p['team'] == 2]
     
     team1_total = round(sum(p['power'] for p in team1), 1)

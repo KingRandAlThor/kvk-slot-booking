@@ -31,6 +31,21 @@
           <input type="text" name="alliance" required placeholder="e.g. KVK" maxlength="3" pattern="[A-Za-z]{3}">
         </div>
       </div>
+      
+      <div class="form-row" style="margin-top: 15px;">
+        <div class="form-col">
+          <label style="display: flex; align-items: center; gap: 5px;"><span style="font-size: 1.2em;">🛡️</span> Infantry TG</label>
+          <input type="number" name="infantry_tg" placeholder="0-5" min="0" max="5" value="0">
+        </div>
+        <div class="form-col">
+          <label style="display: flex; align-items: center; gap: 5px;"><span style="font-size: 1.2em;">🏹</span> Archery TG</label>
+          <input type="number" name="archery_tg" placeholder="0-5" min="0" max="5" value="0">
+        </div>
+        <div class="form-col">
+          <label style="display: flex; align-items: center; gap: 5px;"><span style="font-size: 1.2em;">🐴</span> Cavalry TG</label>
+          <input type="number" name="cavalry_tg" placeholder="0-5" min="0" max="5" value="0">
+        </div>
+      </div>
       <button type="submit" style="background: #27ae60;">➕ Add Player</button>
     </form>
   </div>
@@ -51,6 +66,9 @@
             <th style="padding: 10px; text-align: left; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Player</th>
             <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Alliance</th>
             <th style="padding: 10px; text-align: right; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Power</th>
+            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">🛡️ Infantry</th>
+            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">🏹 Archery</th>
+            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">🐴 Cavalry</th>
             <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Action</th>
           </tr>
         </thead>
@@ -60,6 +78,9 @@
             <td style="padding: 8px;">{{ player.name }}</td>
             <td style="padding: 8px; text-align: center; color: #daa520; font-weight: bold;">{{ player.alliance }}</td>
             <td style="padding: 8px; text-align: right; color: #3498db; font-weight: bold;">{{ player.power }}M</td>
+            <td style="padding: 8px; text-align: center; color: #3498db; font-weight: bold;">{% if player.infantry_tg > 0 %}TG{{ player.infantry_tg }}{% else %}-{% endif %}</td>
+            <td style="padding: 8px; text-align: center; color: #2ecc71; font-weight: bold;">{% if player.archery_tg > 0 %}TG{{ player.archery_tg }}{% else %}-{% endif %}</td>
+            <td style="padding: 8px; text-align: center; color: #9b59b6; font-weight: bold;">{% if player.cavalry_tg > 0 %}TG{{ player.cavalry_tg }}{% else %}-{% endif %}</td>
             <td style="padding: 8px; text-align: center;">
               <form method="post" style="display: inline; margin-right: 5px;">
                 <input type="hidden" name="action" value="switch_team">
@@ -96,6 +117,9 @@
             <th style="padding: 10px; text-align: left; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Player</th>
             <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Alliance</th>
             <th style="padding: 10px; text-align: right; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Power</th>
+            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">🛡️ Infantry</th>
+            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">🏹 Archery</th>
+            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">🐴 Cavalry</th>
             <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Action</th>
           </tr>
         </thead>
@@ -105,6 +129,9 @@
             <td style="padding: 8px;">{{ player.name }}</td>
             <td style="padding: 8px; text-align: center; color: #daa520; font-weight: bold;">{{ player.alliance }}</td>
             <td style="padding: 8px; text-align: right; color: #e74c3c; font-weight: bold;">{{ player.power }}M</td>
+            <td style="padding: 8px; text-align: center; color: #3498db; font-weight: bold;">{% if player.infantry_tg > 0 %}TG{{ player.infantry_tg }}{% else %}-{% endif %}</td>
+            <td style="padding: 8px; text-align: center; color: #2ecc71; font-weight: bold;">{% if player.archery_tg > 0 %}TG{{ player.archery_tg }}{% else %}-{% endif %}</td>
+            <td style="padding: 8px; text-align: center; color: #9b59b6; font-weight: bold;">{% if player.cavalry_tg > 0 %}TG{{ player.cavalry_tg }}{% else %}-{% endif %}</td>
             <td style="padding: 8px; text-align: center;">
               <form method="post" style="display: inline; margin-right: 5px;">
                 <input type="hidden" name="action" value="switch_team">
