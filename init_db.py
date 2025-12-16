@@ -66,6 +66,22 @@ def init_db():
         );
     ''')
     
+    # Create training_players table for KVK Training
+    print("📋 Creating training_players table...")
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS training_players (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            power REAL NOT NULL,
+            alliance TEXT NOT NULL,
+            infantry_tg INTEGER DEFAULT 0,
+            archery_tg INTEGER DEFAULT 0,
+            cavalry_tg INTEGER DEFAULT 0,
+            team INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+    ''')
+    
     # Add missing columns to existing tables
     print("🔄 Checking for missing columns...")
     
