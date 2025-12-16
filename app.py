@@ -502,19 +502,19 @@ def index(day='monday'):
                 new_slot = request.form.get('new_slot', '')
                 if old_slot and new_slot:
                     # Get the list_type of the old reservation
-                    cur.execute('SELECT list_type FROM reservations WHERE slot_start = ?;', (old_slot,))
+                    cur.execute('SELECT list_type FROM reservations WHERE event_date = ?;', (old_slot,))
                     old_res = cur.fetchone()
                     if not old_res:
                         flash('Old slot reservation not found.', 'error')
                     else:
                         list_type = old_res['list_type']
                         # Check new slot is free in the same list
-                        cur.execute('SELECT COUNT(*) FROM reservations WHERE slot_start = ? AND event_day = ? AND list_type = ?;', (new_slot, day, list_type))
+                        cur.execute('SELECT COUNT(*) FROM reservations WHERE event_date = ? AND event_day = ? AND list_type = ?;', (new_slot, day, list_type))
                         if cur.fetchone()[0] > 0:
                             flash('New slot is already taken.', 'error')
                         else:
                             # Move the reservation
-                            cur.execute('UPDATE reservations SET slot_start = ? WHERE slot_start = ? AND event_day = ? AND list_type = ?;', (new_slot, old_slot, day, list_type))
+                            cur.execute('UPDATE reservations SET event_date = ? WHERE event_date = ? AND event_day = ? AND list_type = ?;', (new_slot, old_slot, day, list_type))
                             db.commit()
                         new_dt = parse_iso_slot(new_slot)
                         flash(f'Reservation moved to {new_dt.strftime("%H:%M")} UTC!', 'success')
@@ -554,14 +554,14 @@ def index(day='monday'):
                         flash(f'You need at least {SLOT_MIN_SPEEDUP_DAYS} days of speedups.', 'error')
                     else:
                         # Check availability for this list type
-                        cur.execute('SELECT COUNT(*) FROM reservations WHERE slot_start = ? AND event_day = ? AND list_type = ?;', (slot_iso, day, list_type))
+                        cur.execute('SELECT COUNT(*) FROM reservations WHERE event_date = ? AND event_day = ? AND list_type = ?;', (slot_iso, day, list_type))
                         if cur.fetchone()[0] > 0:
                             flash('This slot is already reserved.', 'error')
                         else:
                             # Insert reservation with list_type
                             now = datetime.now(timezone.utc)
-                            cur.execute('INSERT INTO reservations (slot_start, event_day, player_name, speedup_days, created_at, list_type) VALUES (?, ?, ?, ?, ?, ?);',
-                                        (slot_iso, day, player_name, speedup_days, now.isoformat(), list_type))
+                            cur.execute('INSERT INTO reservations (event_date, event_day, player_name, speedup_days, reserved_at, list_type, slot_index) VALUES (?, ?, ?, ?, ?, ?, ?);',
+                                        (slot_iso, day, player_name, speedup_days, now.isoformat(), list_type, 0))
                             db.commit()
                             list_name = 'Main List' if list_type == 'main' else 'Secondary List'
                             flash(f'Reservation confirmed for {slot_dt.strftime("%H:%M")} UTC on {list_name}!', 'success')
@@ -573,7 +573,7 @@ def index(day='monday'):
         key = s.isoformat()
         
         # Main list slots
-        cur.execute("SELECT player_name, speedup_days FROM reservations WHERE slot_start = ? AND event_day = ? AND list_type = 'main';", (key, day))
+        cur.execute("SELECT player_name, speedup_days FROM reservations WHERE event_date = ? AND event_day = ? AND list_type = 'main';", (key, day))
         row = cur.fetchone()
         reserved_main = row is not None
         player_main = row['player_name'] if reserved_main else None
@@ -582,7 +582,7 @@ def index(day='monday'):
         
         # Secondary list slots (only for dual-list events)
         if is_dual_list:
-            cur.execute("SELECT player_name, speedup_days FROM reservations WHERE slot_start = ? AND event_day = ? AND list_type = 'secondary';", (key, day))
+            cur.execute("SELECT player_name, speedup_days FROM reservations WHERE event_date = ? AND event_day = ? AND list_type = 'secondary';", (key, day))
             row = cur.fetchone()
             reserved_secondary = row is not None
             player_secondary = row['player_name'] if reserved_secondary else None
@@ -753,10 +753,10 @@ def admin():
     # GET: show admin page for selected day
     current_date = get_event_date(selected_day)
     # Only count and show reservations for the current event date and day
-    cur.execute("SELECT COUNT(*) FROM reservations WHERE slot_start LIKE ? AND event_day = ?;", (current_date + '%', selected_day))
+    cur.execute("SELECT COUNT(*) FROM reservations WHERE event_date LIKE ? AND event_day = ?;", (current_date + '%', selected_day))
     reservation_count = cur.fetchone()[0]
     # Get reservations for the current event date and day (include list_type)
-    cur.execute("SELECT id, slot_start, player_name, speedup_days, list_type FROM reservations WHERE slot_start LIKE ? AND event_day = ? ORDER BY list_type, slot_start;", (current_date + '%', selected_day))
+    cur.execute("SELECT id, event_date, player_name, speedup_days, list_type FROM reservations WHERE event_date LIKE ? AND event_day = ? ORDER BY list_type, event_date;", (current_date + '%', selected_day))
     reservations = cur.fetchall()
     # Get registration open time for this day
     registration_open = get_registration_open(selected_day)
