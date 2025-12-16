@@ -48,11 +48,12 @@ def init_db():
     cur.execute('''
         CREATE TABLE IF NOT EXISTS reservations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            slot_start TEXT NOT NULL,
+            event_date TEXT NOT NULL,
             event_day TEXT DEFAULT 'monday',
             player_name TEXT NOT NULL,
-            speedup_days INTEGER DEFAULT 0,
-            created_at TEXT,
+            slot_index INTEGER NOT NULL,
+            speedup_days INTEGER NOT NULL,
+            reserved_at TEXT NOT NULL,
             list_type TEXT DEFAULT 'main'
         );
     ''')
