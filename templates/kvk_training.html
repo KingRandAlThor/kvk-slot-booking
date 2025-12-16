@@ -1,0 +1,164 @@
+{% extends 'layout.html' %}
+
+{% block title %}⚔️ KVK Training Teams — KINGSHOT{% endblock %}
+
+{% block content %}
+  <h1>⚔️ KVK Training - Team Balancer</h1>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="flash {{ category }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="admin-section">
+    <h2>➕ Add Player</h2>
+    <form method="post" class="admin-form">
+      <input type="hidden" name="action" value="add_player">
+      <div class="form-row">
+        <div class="form-col">
+          <label>👤 Player Name</label>
+          <input type="text" name="player_name" required placeholder="e.g. Rydak">
+        </div>
+        <div class="form-col">
+          <label>💪 Power (in millions)</label>
+          <input type="number" name="power" required placeholder="e.g. 45.5" step="0.1" min="0">
+        </div>
+        <div class="form-col">
+          <label>🏰 Alliance (3 letters)</label>
+          <input type="text" name="alliance" required placeholder="e.g. KVK" maxlength="3" pattern="[A-Za-z]{3}">
+        </div>
+      </div>
+      <button type="submit" style="background: #27ae60;">➕ Add Player</button>
+    </form>
+  </div>
+
+  <div class="teams-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; align-items: start;">
+    <!-- Team 1 -->
+    <div class="admin-section" style="background: linear-gradient(135deg, rgba(52, 152, 219, 0.1) 0%, rgba(41, 128, 185, 0.05) 100%); border: 2px solid rgba(52, 152, 219, 0.3); height: 100%;">
+      <h2>🔵 Team 1</h2>
+      <div style="text-align: center; margin: 15px 0;">
+        <div style="font-size: 1.5em; color: #3498db; font-weight: bold;">{{ team1_total }}M Power</div>
+        <div style="color: #888; font-size: 0.9em;">{{ team1|length }} players</div>
+      </div>
+      
+      {% if team1 %}
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+          <tr style="background: rgba(52, 152, 219, 0.2);">
+            <th style="padding: 10px; text-align: left; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Player</th>
+            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Alliance</th>
+            <th style="padding: 10px; text-align: right; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Power</th>
+            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for player in team1 %}
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <td style="padding: 8px;">{{ player.name }}</td>
+            <td style="padding: 8px; text-align: center; color: #daa520; font-weight: bold;">{{ player.alliance }}</td>
+            <td style="padding: 8px; text-align: right; color: #3498db; font-weight: bold;">{{ player.power }}M</td>
+            <td style="padding: 8px; text-align: center;">
+              <form method="post" style="display: inline; margin-right: 5px;">
+                <input type="hidden" name="action" value="switch_team">
+                <input type="hidden" name="player_id" value="{{ player.id }}">
+                <button type="submit" style="background: #e74c3c; padding: 5px 10px; font-size: 0.85em;" title="Switch to Team 2">🔄</button>
+              </form>
+              <form method="post" style="display: inline;" onsubmit="return confirm('Remove {{ player.name }}?');">
+                <input type="hidden" name="action" value="remove_player">
+                <input type="hidden" name="player_id" value="{{ player.id }}">
+                <button type="submit" style="background: #c0392b; padding: 5px 10px; font-size: 0.85em;">❌</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="text-align: center; color: #888; padding: 20px;">No players yet</p>
+      {% endif %}
+    </div>
+
+    <!-- Team 2 -->
+    <div class="admin-section" style="background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(192, 57, 43, 0.05) 100%); border: 2px solid rgba(231, 76, 60, 0.3); height: 100%;">
+      <h2>🔴 Team 2</h2>
+      <div style="text-align: center; margin: 15px 0;">
+        <div style="font-size: 1.5em; color: #e74c3c; font-weight: bold;">{{ team2_total }}M Power</div>
+        <div style="color: #888; font-size: 0.9em;">{{ team2|length }} players</div>
+      </div>
+      
+      {% if team2 %}
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+          <tr style="background: rgba(231, 76, 60, 0.2);">
+            <th style="padding: 10px; text-align: left; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Player</th>
+            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Alliance</th>
+            <th style="padding: 10px; text-align: right; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Power</th>
+            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for player in team2 %}
+          <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <td style="padding: 8px;">{{ player.name }}</td>
+            <td style="padding: 8px; text-align: center; color: #daa520; font-weight: bold;">{{ player.alliance }}</td>
+            <td style="padding: 8px; text-align: right; color: #e74c3c; font-weight: bold;">{{ player.power }}M</td>
+            <td style="padding: 8px; text-align: center;">
+              <form method="post" style="display: inline; margin-right: 5px;">
+                <input type="hidden" name="action" value="switch_team">
+                <input type="hidden" name="player_id" value="{{ player.id }}">
+                <button type="submit" style="background: #3498db; padding: 5px 10px; font-size: 0.85em;" title="Switch to Team 1">🔄</button>
+              </form>
+              <form method="post" style="display: inline;" onsubmit="return confirm('Remove {{ player.name }}?');">
+                <input type="hidden" name="action" value="remove_player">
+                <input type="hidden" name="player_id" value="{{ player.id }}">
+                <button type="submit" style="background: #c0392b; padding: 5px 10px; font-size: 0.85em;">❌</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="text-align: center; color: #888; padding: 20px;">No players yet</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="admin-section" style="margin-top: 30px; text-align: center;">
+    <h3>⚖️ Balance Status</h3>
+    <div style="display: flex; justify-content: center; gap: 40px; margin: 20px 0;">
+      <div>
+        <div style="font-size: 0.9em; color: #888;">Power Difference</div>
+        <div style="font-size: 1.8em; font-weight: bold; color: {% if power_diff < 5 %}#27ae60{% elif power_diff < 10 %}#f39c12{% else %}#e74c3c{% endif %};">
+          {{ power_diff }}M
+        </div>
+      </div>
+      <div>
+        <div style="font-size: 0.9em; color: #888;">Player Difference</div>
+        <div style="font-size: 1.8em; font-weight: bold; color: {% if player_diff <= 1 %}#27ae60{% elif player_diff <= 2 %}#f39c12{% else %}#e74c3c{% endif %};">
+          {{ player_diff }}
+        </div>
+      </div>
+    </div>
+    
+    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px; flex-wrap: wrap;">
+      <form method="post">
+        <input type="hidden" name="action" value="rebalance">
+        <button type="submit" style="background: #27ae60;">⚖️ Rebalance Teams</button>
+      </form>
+      <form method="post" onsubmit="return confirm('This will remove all players. Continue?');">
+        <input type="hidden" name="action" value="reset_all">
+        <button type="submit" style="background: #e74c3c;">🗑️ Reset All Teams</button>
+      </form>
+    </div>
+  </div>
+
+  <div style="text-align: center; margin-top: 30px;">
+    <a href="{{ url_for('home') }}" style="text-decoration: none;">
+      <button type="button" style="background: #95a5a6;">🏠 Back to Home</button>
+    </a>
+  </div>
+{% endblock %}

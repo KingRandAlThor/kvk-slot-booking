@@ -64,4 +64,23 @@
   <div style="text-align: center; margin-top: 40px; color: #888; font-size: 0.9em;">
     <p>Configure dates in admin panel for each event day</p>
   </div>
+
+  <!-- KVK Training Button -->
+  <div style="text-align: center; margin-top: 30px;">
+    <a href="{{ url_for('kvk_training') }}" style="text-decoration: none;">
+      <button type="button" style="
+        background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+        color: white;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1em;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
+        transition: all 0.3s ease;
+      " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(142, 68, 173, 0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(142, 68, 173, 0.3)'">
+        ⚔️ KVK Training Team Balancer
+      </button>
+    </a>
+  </div>
 {% endblock %}

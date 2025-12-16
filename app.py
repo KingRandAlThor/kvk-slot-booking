@@ -53,6 +53,21 @@ def init_schema(db):
         );
         """
     )
+    
+    # Create training_players table for KVK Training team balancer
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS training_players (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            power REAL NOT NULL,
+            alliance TEXT NOT NULL,
+            team INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+    )
+    
     db.commit()
 
 app = Flask(__name__)
@@ -756,6 +771,141 @@ def rydak_wheel():
     ]
     theme = get_current_theme()
     return render_template('rydak-wheel.html', rydaks=rydaks, theme=theme)
+
+@app.route('/kvk-training', methods=['GET', 'POST'])
+def kvk_training():
+    """KVK Training team balancer - auto-balance teams by power"""
+    db = get_db()
+    cur = db.cursor()
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'add_player':
+            name = request.form.get('player_name', '').strip()
+            try:
+                power = float(request.form.get('power', 0))
+            except ValueError:
+                power = 0
+            alliance = request.form.get('alliance', '').strip().upper()[:3]
+            
+            if not name or power <= 0 or len(alliance) != 3:
+                flash('Please fill all fields correctly (Alliance must be 3 letters).', 'error')
+            else:
+                # Add player and auto-balance
+                cur.execute(
+                    'INSERT INTO training_players (name, power, alliance, team) VALUES (?, ?, ?, ?);',
+                    (name, power, alliance, 0)  # Team 0 = unassigned
+                )
+                db.commit()
+                
+                # Auto-balance teams
+                balance_teams(db)
+                flash(f'{name} added and teams rebalanced!', 'success')
+        
+        elif action == 'switch_team':
+            player_id = request.form.get('player_id', '').strip()
+            if player_id:
+                # Get current team
+                cur.execute('SELECT team FROM training_players WHERE id = ?;', (player_id,))
+                row = cur.fetchone()
+                if row:
+                    current_team = row['team']
+                    new_team = 2 if current_team == 1 else 1
+                    cur.execute('UPDATE training_players SET team = ? WHERE id = ?;', (new_team, player_id))
+                    db.commit()
+                    flash('Player switched teams!', 'success')
+        
+        elif action == 'rebalance':
+            balance_teams(db)
+            flash('Teams rebalanced!', 'success')
+        
+        elif action == 'remove_player':
+            player_id = request.form.get('player_id', '').strip()
+            if player_id:
+                cur.execute('DELETE FROM training_players WHERE id = ?;', (player_id,))
+                db.commit()
+                balance_teams(db)
+                flash('Player removed and teams rebalanced!', 'success')
+        
+        elif action == 'reset_all':
+            cur.execute('DELETE FROM training_players;')
+            db.commit()
+            flash('All teams reset!', 'success')
+        
+        return redirect(url_for('kvk_training'))
+    
+    # GET: Fetch teams
+    cur.execute('SELECT id, name, power, alliance, team FROM training_players ORDER BY power DESC;')
+    players = cur.fetchall()
+    
+    team1 = [{'id': p['id'], 'name': p['name'], 'power': p['power'], 'alliance': p['alliance']} 
+             for p in players if p['team'] == 1]
+    team2 = [{'id': p['id'], 'name': p['name'], 'power': p['power'], 'alliance': p['alliance']} 
+             for p in players if p['team'] == 2]
+    
+    team1_total = round(sum(p['power'] for p in team1), 1)
+    team2_total = round(sum(p['power'] for p in team2), 1)
+    power_diff = round(abs(team1_total - team2_total), 1)
+    player_diff = abs(len(team1) - len(team2))
+    
+    theme = get_current_theme()
+    return render_template('kvk_training.html', 
+                         team1=team1, team2=team2,
+                         team1_total=team1_total, team2_total=team2_total,
+                         power_diff=power_diff, player_diff=player_diff,
+                         theme=theme)
+
+def balance_teams(db):
+    """Auto-balance teams to minimize power difference while keeping player counts equal"""
+    cur = db.cursor()
+    
+    # Get all players sorted by power (descending)
+    cur.execute('SELECT id, power FROM training_players ORDER BY power DESC;')
+    players = cur.fetchall()
+    
+    if not players:
+        return
+    
+    # Reset all teams
+    cur.execute('UPDATE training_players SET team = 0;')
+    
+    team1_power = 0
+    team2_power = 0
+    team1_count = 0
+    team2_count = 0
+    
+    # Greedy algorithm: assign each player to the team with lower total power
+    # But also try to keep player counts balanced
+    for player in players:
+        player_id = player['id']
+        power = player['power']
+        
+        # Decide which team gets this player
+        if team1_count < team2_count:
+            # Team 1 has fewer players, assign there
+            assign_to = 1
+            team1_power += power
+            team1_count += 1
+        elif team2_count < team1_count:
+            # Team 2 has fewer players, assign there
+            assign_to = 2
+            team2_power += power
+            team2_count += 1
+        else:
+            # Equal player counts, assign to team with lower power
+            if team1_power <= team2_power:
+                assign_to = 1
+                team1_power += power
+                team1_count += 1
+            else:
+                assign_to = 2
+                team2_power += power
+                team2_count += 1
+        
+        cur.execute('UPDATE training_players SET team = ? WHERE id = ?;', (assign_to, player_id))
+    
+    db.commit()
 
 @app.teardown_appcontext
 def close_connection(exception):
