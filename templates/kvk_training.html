@@ -60,43 +60,45 @@
       </div>
       
       {% if team1 %}
-      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+      <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em;">
         <thead>
           <tr style="background: rgba(52, 152, 219, 0.2);">
-            <th style="padding: 10px; text-align: left; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Player</th>
-            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Alliance</th>
-            <th style="padding: 10px; text-align: right; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Power</th>
-            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">🛡️ Infantry</th>
-            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">🏹 Archery</th>
-            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">🐴 Cavalry</th>
-            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Action</th>
+            <th style="padding: 8px; text-align: left; border-bottom: 2px solid rgba(52, 152, 219, 0.3); white-space: nowrap;">Player</th>
+            <th style="padding: 6px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">ALL</th>
+            <th style="padding: 6px; text-align: right; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Power</th>
+            <th style="padding: 6px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">🛡️</th>
+            <th style="padding: 6px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">🏹</th>
+            <th style="padding: 6px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">🐴</th>
+            <th style="padding: 6px; text-align: center; border-bottom: 2px solid rgba(52, 152, 219, 0.3);">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for player in team1 %}
           <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-            <td style="padding: 8px;">{{ player.name }}</td>
-            <td style="padding: 8px; text-align: center; color: #daa520; font-weight: bold;">{{ player.alliance }}</td>
-            <td style="padding: 8px; text-align: right; color: #3498db; font-weight: bold;">{{ player.power }}M</td>
-            <td style="padding: 8px; text-align: center; color: #3498db; font-weight: bold;">{% if player.infantry_tg > 0 %}TG{{ player.infantry_tg }}{% else %}-{% endif %}</td>
-            <td style="padding: 8px; text-align: center; color: #2ecc71; font-weight: bold;">{% if player.archery_tg > 0 %}TG{{ player.archery_tg }}{% else %}-{% endif %}</td>
-            <td style="padding: 8px; text-align: center; color: #9b59b6; font-weight: bold;">{% if player.cavalry_tg > 0 %}TG{{ player.cavalry_tg }}{% else %}-{% endif %}</td>
-            <td style="padding: 8px; text-align: center;">
-              <form method="post" style="display: inline; margin-right: 5px;">
+            <td style="padding: 6px; white-space: nowrap;">{{ player.name }}</td>
+            <td style="padding: 6px; text-align: center; color: #daa520; font-weight: bold; font-size: 0.85em;">{{ player.alliance }}</td>
+            <td style="padding: 6px; text-align: right; color: #3498db; font-weight: bold;">{{ player.power }}M</td>
+            <td style="padding: 6px; text-align: center; color: #3498db; font-weight: bold; font-size: 0.85em;">{% if player.infantry_tg > 0 %}{{ player.infantry_tg }}{% else %}-{% endif %}</td>
+            <td style="padding: 6px; text-align: center; color: #2ecc71; font-weight: bold; font-size: 0.85em;">{% if player.archery_tg > 0 %}{{ player.archery_tg }}{% else %}-{% endif %}</td>
+            <td style="padding: 6px; text-align: center; color: #9b59b6; font-weight: bold; font-size: 0.85em;">{% if player.cavalry_tg > 0 %}{{ player.cavalry_tg }}{% else %}-{% endif %}</td>
+            <td style="padding: 6px; text-align: center; white-space: nowrap;">
+              <form method="post" style="display: inline; margin-right: 3px;">
                 <input type="hidden" name="action" value="switch_team">
                 <input type="hidden" name="player_id" value="{{ player.id }}">
-                <button type="submit" style="background: #e74c3c; padding: 5px 10px; font-size: 0.85em;" title="Switch to Team 2">🔄</button>
+                <button type="submit" style="background: #e74c3c; padding: 4px 8px; font-size: 0.8em;" title="Switch to Team 2">🔄</button>
               </form>
               <form method="post" style="display: inline;" onsubmit="return confirm('Remove {{ player.name }}?');">
                 <input type="hidden" name="action" value="remove_player">
                 <input type="hidden" name="player_id" value="{{ player.id }}">
-                <button type="submit" style="background: #c0392b; padding: 5px 10px; font-size: 0.85em;">❌</button>
+                <button type="submit" style="background: #c0392b; padding: 4px 8px; font-size: 0.8em;">❌</button>
               </form>
             </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
+      </div>
       {% else %}
       <p style="text-align: center; color: #888; padding: 20px;">No players yet</p>
       {% endif %}
@@ -111,43 +113,45 @@
       </div>
       
       {% if team2 %}
-      <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+      <div style="overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9em;">
         <thead>
           <tr style="background: rgba(231, 76, 60, 0.2);">
-            <th style="padding: 10px; text-align: left; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Player</th>
-            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Alliance</th>
-            <th style="padding: 10px; text-align: right; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Power</th>
-            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">🛡️ Infantry</th>
-            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">🏹 Archery</th>
-            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">🐴 Cavalry</th>
-            <th style="padding: 10px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Action</th>
+            <th style="padding: 8px; text-align: left; border-bottom: 2px solid rgba(231, 76, 60, 0.3); white-space: nowrap;">Player</th>
+            <th style="padding: 6px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">ALL</th>
+            <th style="padding: 6px; text-align: right; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Power</th>
+            <th style="padding: 6px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">🛡️</th>
+            <th style="padding: 6px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">🏹</th>
+            <th style="padding: 6px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">🐴</th>
+            <th style="padding: 6px; text-align: center; border-bottom: 2px solid rgba(231, 76, 60, 0.3);">Action</th>
           </tr>
         </thead>
         <tbody>
           {% for player in team2 %}
           <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-            <td style="padding: 8px;">{{ player.name }}</td>
-            <td style="padding: 8px; text-align: center; color: #daa520; font-weight: bold;">{{ player.alliance }}</td>
-            <td style="padding: 8px; text-align: right; color: #e74c3c; font-weight: bold;">{{ player.power }}M</td>
-            <td style="padding: 8px; text-align: center; color: #3498db; font-weight: bold;">{% if player.infantry_tg > 0 %}TG{{ player.infantry_tg }}{% else %}-{% endif %}</td>
-            <td style="padding: 8px; text-align: center; color: #2ecc71; font-weight: bold;">{% if player.archery_tg > 0 %}TG{{ player.archery_tg }}{% else %}-{% endif %}</td>
-            <td style="padding: 8px; text-align: center; color: #9b59b6; font-weight: bold;">{% if player.cavalry_tg > 0 %}TG{{ player.cavalry_tg }}{% else %}-{% endif %}</td>
-            <td style="padding: 8px; text-align: center;">
-              <form method="post" style="display: inline; margin-right: 5px;">
+            <td style="padding: 6px; white-space: nowrap;">{{ player.name }}</td>
+            <td style="padding: 6px; text-align: center; color: #daa520; font-weight: bold; font-size: 0.85em;">{{ player.alliance }}</td>
+            <td style="padding: 6px; text-align: right; color: #e74c3c; font-weight: bold;">{{ player.power }}M</td>
+            <td style="padding: 6px; text-align: center; color: #3498db; font-weight: bold; font-size: 0.85em;">{% if player.infantry_tg > 0 %}{{ player.infantry_tg }}{% else %}-{% endif %}</td>
+            <td style="padding: 6px; text-align: center; color: #2ecc71; font-weight: bold; font-size: 0.85em;">{% if player.archery_tg > 0 %}{{ player.archery_tg }}{% else %}-{% endif %}</td>
+            <td style="padding: 6px; text-align: center; color: #9b59b6; font-weight: bold; font-size: 0.85em;">{% if player.cavalry_tg > 0 %}{{ player.cavalry_tg }}{% else %}-{% endif %}</td>
+            <td style="padding: 6px; text-align: center; white-space: nowrap;">
+              <form method="post" style="display: inline; margin-right: 3px;">
                 <input type="hidden" name="action" value="switch_team">
                 <input type="hidden" name="player_id" value="{{ player.id }}">
-                <button type="submit" style="background: #3498db; padding: 5px 10px; font-size: 0.85em;" title="Switch to Team 1">🔄</button>
+                <button type="submit" style="background: #3498db; padding: 4px 8px; font-size: 0.8em;" title="Switch to Team 1">🔄</button>
               </form>
               <form method="post" style="display: inline;" onsubmit="return confirm('Remove {{ player.name }}?');">
                 <input type="hidden" name="action" value="remove_player">
                 <input type="hidden" name="player_id" value="{{ player.id }}">
-                <button type="submit" style="background: #c0392b; padding: 5px 10px; font-size: 0.85em;">❌</button>
+                <button type="submit" style="background: #c0392b; padding: 4px 8px; font-size: 0.8em;">❌</button>
               </form>
             </td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
+      </div>
       {% else %}
       <p style="text-align: center; color: #888; padding: 20px;">No players yet</p>
       {% endif %}
