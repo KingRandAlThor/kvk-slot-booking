@@ -25,9 +25,9 @@ def init_db():
             event_day TEXT DEFAULT 'monday',
             player_name TEXT NOT NULL,
             speedup_days INTEGER NOT NULL,
+            preferred_slots TEXT NOT NULL,
             created_at TEXT NOT NULL,
-            status TEXT DEFAULT 'pending',
-            waitlist_position INTEGER,
+            assigned_slot TEXT,
             list_type TEXT DEFAULT 'main'
         );
     ''')
@@ -83,6 +83,21 @@ def init_db():
         );
     ''')
     
+    # Create slot_conflicts table
+    print("📋 Creating slot_conflicts table...")
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS slot_conflicts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_date TEXT NOT NULL,
+            event_day TEXT NOT NULL,
+            slot_iso TEXT NOT NULL,
+            player_names TEXT NOT NULL,
+            speedup_days INTEGER NOT NULL,
+            resolved INTEGER DEFAULT 0,
+            winner TEXT
+        );
+    ''')
+    
     # Add missing columns to existing tables
     print("🔄 Checking for missing columns...")
     
@@ -113,6 +128,20 @@ def init_db():
         print("  ✓ Added list_type to reservations")
     except sqlite3.OperationalError:
         print("  ✓ list_type already exists in reservations")
+    
+    # Add preferred_slots to preregistrations if missing
+    try:
+        cur.execute("ALTER TABLE preregistrations ADD COLUMN preferred_slots TEXT;")
+        print("  ✓ Added preferred_slots to preregistrations")
+    except sqlite3.OperationalError:
+        print("  ✓ preferred_slots already exists in preregistrations")
+    
+    # Add assigned_slot to preregistrations if missing
+    try:
+        cur.execute("ALTER TABLE preregistrations ADD COLUMN assigned_slot TEXT;")
+        print("  ✓ Added assigned_slot to preregistrations")
+    except sqlite3.OperationalError:
+        print("  ✓ assigned_slot already exists in preregistrations")
     
     conn.commit()
     conn.close()

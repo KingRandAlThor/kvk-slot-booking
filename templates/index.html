@@ -76,21 +76,76 @@
   {% else %}
   
   {% if not selection_state or not selection_state.completed %}
+  
+  <!-- Timer pour l'optimisation -->
+  {% if selection_state and selection_state.ready_at %}
+  <div class="countdown-panel" style="background: linear-gradient(135deg, rgba(218,165,32,0.15), rgba(255,215,0,0.1)); border: 2px solid #daa520;">
+    <h2>⚡ Optimization runs in</h2>
+    <div id="optimization-countdown" class="countdown-timer">
+      <div class="countdown-item">
+        <span id="opti-days">--</span>
+        <small>Days</small>
+      </div>
+      <div class="countdown-item">
+        <span id="opti-hours">--</span>
+        <small>Hours</small>
+      </div>
+      <div class="countdown-item">
+        <span id="opti-minutes">--</span>
+        <small>Minutes</small>
+      </div>
+      <div class="countdown-item">
+        <span id="opti-seconds">--</span>
+        <small>Seconds</small>
+      </div>
+    </div>
+    <p class="countdown-note">🔮 The algorithm will assign slots when the timer ends. Register before then!</p>
+  </div>
+
+  <script>
+    (function() {
+      const optiDate = new Date("{{ selection_state.ready_at }}");
+      
+      function updateOptiCountdown() {
+        const now = new Date();
+        const diff = optiDate - now;
+        
+        if (diff <= 0) {
+          // Reload page when optimization completes
+          location.reload();
+          return;
+        }
+        
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+        
+        document.getElementById('opti-days').textContent = String(days).padStart(2, '0');
+        document.getElementById('opti-hours').textContent = String(hours).padStart(2, '0');
+        document.getElementById('opti-minutes').textContent = String(minutes).padStart(2, '0');
+        document.getElementById('opti-seconds').textContent = String(seconds).padStart(2, '0');
+      }
+      
+      updateOptiCountdown();
+      setInterval(updateOptiCountdown, 1000);
+    })();
+  </script>
+  {% endif %}
+  
   <!-- Formulaire de pré-inscription (avant sélection) -->
   <div class="reserve-panel">
     {% if theme == 'christmas' %}
-    <h2>🎁 Pre-register for the draw</h2>
+    <h2>🎁 Pre-register with your preferred slots</h2>
     {% else %}
-    <h2>⚔️ Pre-register for the draw</h2>
+    <h2>⚔️ Pre-register with your preferred slots</h2>
     {% endif %}
-    <p style="margin-top:4px;">Top {{ selection_top_n }} by speedups are selected when the timer ends. Others go to the waitlist.</p>
+    <p style="margin-top:4px;">Select as many slots as you want. The system will optimize to maximize total speedups.</p>
+    <p style="margin-top:4px;"><strong>You can only get 1 slot maximum.</strong> Select multiple to increase your chances!</p>
     {% if is_dual_list %}
-      <p style="margin-top:4px;"><strong>⚠️ If you're on the waitlist after selection, you can switch to the secondary list to guarantee a slot!</strong></p>
+      <p style="margin-top:4px;"><strong>⚠️ Dual list system: choose Main or Secondary list.</strong></p>
     {% endif %}
-    {% if selection_state and selection_state.ready_at %}
-      <p class="countdown-note">Selection locks at <strong>{{ selection_state.ready_at }}</strong> UTC.</p>
-    {% endif %}
-    <form method="post" class="reserve-form">
+    <form method="post" class="reserve-form" id="prereg-form">
       <input type="hidden" name="action" value="preregister">
       <div>
         <label>Player name</label>
@@ -100,17 +155,133 @@
         <label>Speedup days</label>
         <input type="number" name="speedup_days" min="1" value="20" required>
       </div>
+      
+      <div style="margin-top:16px;">
+        <label>Select your preferred slots (click to select/deselect):</label>
+        <div style="max-height: 400px; overflow-y: auto; border: 1px solid #555; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-top: 8px;">
+          {% for s in slots_main %}
+            <div style="margin: 4px 0;">
+              <label style="cursor: pointer; display: block; padding: 8px; border-radius: 4px; background: {% if s.reserved %}rgba(255,0,0,0.2){% else %}rgba(0,100,0,0.2){% endif %};">
+                <input type="checkbox" name="selected_slots[]" value="{{ s.iso }}" 
+                       {% if s.reserved %}disabled{% endif %}
+                       class="slot-checkbox" 
+                       style="margin-right: 8px;">
+                <span>{{ s.slot.strftime('%H:%M') }} UTC</span>
+                {% if s.reserved %}
+                  <span style="color: #ff6b6b; margin-left: 8px;">(Reserved by {{ s.player }})</span>
+                {% else %}
+                  <span style="color: #51cf66; margin-left: 8px;">(Available)</span>
+                {% endif %}
+              </label>
+            </div>
+          {% endfor %}
+        </div>
+        <p id="selected-count" style="margin-top: 8px; font-size: 0.9em; color: #aaa;">Selected: 0 slots</p>
+      </div>
+      
       <div style="margin-top:16px;">
         {% if theme == 'christmas' %}
-        <button type="submit">🎁 Pre-register for draw</button>
+        <button type="submit">🎁 Pre-register</button>
         {% else %}
-        <button type="submit">⚔️ Pre-register for draw</button>
+        <button type="submit">⚔️ Pre-register</button>
         {% endif %}
       </div>
     </form>
+    
+    <script>
+      // Update selected count
+      document.querySelectorAll('.slot-checkbox').forEach(cb => {
+        cb.addEventListener('change', function() {
+          const count = document.querySelectorAll('.slot-checkbox:checked').length;
+          document.getElementById('selected-count').textContent = `Selected: ${count} slot${count !== 1 ? 's' : ''}`;
+        });
+      });
+    </script>
   </div>
+  
+  <!-- Liste des joueurs pré-enregistrés -->
+  {% if all_preregistrations and all_preregistrations|length > 0 %}
+  <div class="reserve-panel" style="margin-top: 24px;">
+    <h2>📋 Registered Players ({{ all_preregistrations|length }})</h2>
+    <p style="font-size: 0.9em; color: #aaa;">Check if you're already registered to avoid duplicate entries.</p>
+    <table style="width: 100%; margin-top: 8px;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Player Name</th>
+          <th>Speedups</th>
+          <th>Preferred Slots</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for prereg in all_preregistrations %}
+        <tr>
+          <td data-label="#">{{ loop.index }}</td>
+          <td data-label="Player">{{ prereg.player_name }}</td>
+          <td data-label="Speedups">{{ prereg.speedup_days }} days</td>
+          <td data-label="Slots">
+            {% set slots = prereg.preferred_slots|from_json %}
+            {% if slots %}
+              {{ slots|length }} slot{% if slots|length != 1 %}s{% endif %} selected
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td data-label="Status">
+            {% if prereg.assigned_slot %}
+              <span style="color: #51cf66;">✓ Assigned</span>
+            {% else %}
+              <span style="color: #ffa500;">⏳ Pending</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  
   {% else %}
-  <!-- Formulaires de réservation (après sélection) -->
+  <!-- Affichage après sélection -->
+  <div class="reserve-panel">
+    <h2>✅ Slot assignments completed!</h2>
+    <p>The optimization algorithm has run. Check your assigned slot below.</p>
+    
+    {% if conflicts %}
+      <div style="margin-top: 16px; padding: 12px; background: rgba(255,165,0,0.2); border: 2px solid orange; border-radius: 8px;">
+        <h3 style="margin-top: 0;">⚠️ Conflicts detected!</h3>
+        <p>The following slots have multiple players with identical speedups. Admin must manually resolve:</p>
+        <ul>
+          {% for conflict in conflicts %}
+            <li>
+              <strong>{{ conflict.slot_iso }}</strong> - 
+              {{ conflict.player_names }} 
+              ({{ conflict.speedup_days }} days each)
+            </li>
+          {% endfor %}
+        </ul>
+        <p><em>Contact admin to resolve these conflicts.</em></p>
+      </div>
+    {% endif %}
+    
+    <!-- Dernier inscrit -->
+    {% if all_preregistrations and all_preregistrations|length > 0 %}
+    <div style="margin-top: 16px; padding: 12px; background: linear-gradient(135deg, rgba(81,207,102,0.1), rgba(51,217,178,0.05)); border: 2px solid #51cf66; border-radius: 8px;">
+      <h3 style="margin: 0 0 8px 0; font-size: 1em; color: #51cf66;">🎯 Latest Registration</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+        <span style="font-weight: bold; font-size: 1.1em;">{{ all_preregistrations[-1].player_name }}</span>
+        <span style="color: #ffd43b;">{{ all_preregistrations[-1].speedup_days }} days</span>
+        <span style="font-size: 0.85em; color: #aaa;">{{ all_preregistrations[-1].list_type|capitalize }} list</span>
+        {% if all_preregistrations[-1].assigned_slot %}
+          <span style="color: #51cf66;">✓ {{ all_preregistrations[-1].assigned_slot }}</span>
+        {% else %}
+          <span style="color: #ffa500;">⏳ Pending</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
   {% if is_dual_list and selected_players_secondary %}
   <div class="reserve-forms-grid">
     <!-- Formulaire Main List -->
@@ -244,7 +415,7 @@
   {% endif %}
   <table>
     <thead>
-      <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th><th>Action</th></tr>
+      <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th></tr>
     </thead>
     <tbody>
       {% for s in slots_main %}
@@ -259,31 +430,39 @@
         </td>
         <td data-label="Player">{{ s.player if s.player else '—' }}</td>
         <td data-label="Speedups">{{ (s.days|string ~ ' days') if s.days else '—' }}</td>
-        <td data-label="Action">
-          {% if s.reserved %}
-            <details class="move-dropdown">
-              <summary class="btn-move">🔀</summary>
-              <form method="post" class="move-form">
-                <input type="hidden" name="action" value="move">
-                <input type="hidden" name="old_slot" value="{{ s.iso }}">
-                <select name="new_slot" required>
-                  <option value="">-- New slot --</option>
-                  {% for f in free_slots_main %}
-                    <option value="{{ f.iso }}">{{ f.slot.strftime('%H:%M') }} UTC</option>
-                  {% endfor %}
-                </select>
-                <input type="password" name="password" placeholder="Admin pwd" required>
-                <button type="submit">✔️</button>
-              </form>
-            </details>
-          {% else %}
-            —
-          {% endif %}
-        </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+
+  <!-- Main List Statistics -->
+  {% if stats_main %}
+  <div class="reserve-panel" style="margin-top: 16px; background: linear-gradient(135deg, rgba(81,207,102,0.15), rgba(51,217,178,0.1)); border: 2px solid #51cf66;">
+    <h3 style="margin-top: 0;">📊 Main List Statistics</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px;">
+      <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #51cf66;">{{ stats_main.count }}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Assigned</div>
+      </div>
+      <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #ffd43b;">{{ stats_main.total }}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Total Speedups</div>
+      </div>
+      <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #ff6b6b;">{{ stats_main.min }}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Min</div>
+      </div>
+      <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #51cf66;">{{ stats_main.max }}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Max</div>
+      </div>
+      <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #74c0fc;">{{ "%.1f"|format(stats_main.avg) }}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Average</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   {% if is_dual_list %}
   <!-- Slots table Secondary List -->
@@ -296,7 +475,7 @@
   {% endif %}
   <table>
     <thead>
-      <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th><th>Action</th></tr>
+      <tr><th>Time</th><th>Status</th><th>Player</th><th>Speedups</th></tr>
     </thead>
     <tbody>
       {% for s in slots_secondary %}
@@ -311,123 +490,69 @@
         </td>
         <td data-label="Player">{{ s.player if s.player else '—' }}</td>
         <td data-label="Speedups">{{ (s.days|string ~ ' days') if s.days else '—' }}</td>
-        <td data-label="Action">
-          {% if s.reserved %}
-            <details class="move-dropdown">
-              <summary class="btn-move">🔀</summary>
-              <form method="post" class="move-form">
-                <input type="hidden" name="action" value="move">
-                <input type="hidden" name="old_slot" value="{{ s.iso }}">
-                <select name="new_slot" required>
-                  <option value="">-- New slot --</option>
-                  {% for f in free_slots_secondary %}
-                    <option value="{{ f.iso }}">{{ f.slot.strftime('%H:%M') }} UTC</option>
-                  {% endfor %}
-                </select>
-                <input type="password" name="password" placeholder="Admin pwd" required>
-                <button type="submit">✔️</button>
-              </form>
-            </details>
-          {% else %}
-            —
-          {% endif %}
-        </td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
-  {% endif %}
-
-  <div class="crown-divider">⭐ Selection ⭐</div>
   
-  <div class="selection-grid">
-    <!-- Selected Players -->
-    <div class="selection-section">
-      <h2>Selected (Top {{ selection_top_n }})</h2>
-      <table>
-        <thead>
-          <tr><th>#</th><th>Player</th><th>Speedups</th>{% if is_dual_list and selection_state and selection_state.completed %}<th>Action</th>{% endif %}</tr>
-        </thead>
-        <tbody>
-          {% if selected_players %}
-            {% for p in selected_players %}
-              <tr>
-                <td data-label="#">{{ loop.index }}</td>
-                <td data-label="Player">{{ p.player_name }}</td>
-                <td data-label="Speedups">{{ p.speedup_days }} days</td>
-                {% if is_dual_list and selection_state and selection_state.completed %}
-                <td data-label="Action">
-                  <form method="post" style="display:inline;" onsubmit="return confirm('Switch {{ p.player_name }} to List 2?');">
-                    <input type="hidden" name="action" value="switch_to_secondary">
-                    <input type="hidden" name="player_name" value="{{ p.player_name }}">
-                    <button type="submit" class="btn-list2">→ List 2</button>
-                  </form>
-                </td>
-                {% endif %}
-              </tr>
-            {% endfor %}
-          {% else %}
-            <tr><td colspan="{% if is_dual_list and selection_state and selection_state.completed %}4{% else %}3{% endif %}">No one selected yet.</td></tr>
-          {% endif %}
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Waitlist -->
-    <div class="selection-section">
-      <h2>Waitlist</h2>
-      <table>
-        <thead>
-          <tr><th>Pos</th><th>Player</th><th>Speedups</th>{% if is_dual_list and selection_state and selection_state.completed %}<th>Action</th>{% endif %}</tr>
-        </thead>
-        <tbody>
-          {% if waitlist_players %}
-            {% for p in waitlist_players %}
-              <tr>
-                <td data-label="Pos">{{ p.waitlist_position }}</td>
-                <td data-label="Player">{{ p.player_name }}</td>
-                <td data-label="Speedups">{{ p.speedup_days }} days</td>
-                {% if is_dual_list and selection_state and selection_state.completed %}
-                <td data-label="Action">
-                  <form method="post" style="display:inline;" onsubmit="return confirm('Switch {{ p.player_name }} to List 2?');">
-                    <input type="hidden" name="action" value="switch_to_secondary">
-                    <input type="hidden" name="player_name" value="{{ p.player_name }}">
-                    <button type="submit" class="btn-list2">→ List 2</button>
-                  </form>
-                </td>
-                {% endif %}
-              </tr>
-            {% endfor %}
-          {% else %}
-            <tr><td colspan="{% if is_dual_list and selection_state and selection_state.completed %}4{% else %}3{% endif %}">No one on the waitlist.</td></tr>
-          {% endif %}
-        </tbody>
-      </table>
+  <!-- Secondary List Statistics -->
+  {% if stats_secondary %}
+  <div class="reserve-panel" style="margin-top: 16px; background: linear-gradient(135deg, rgba(116,192,252,0.15), rgba(94,129,244,0.1)); border: 2px solid #74c0fc;">
+    <h3 style="margin-top: 0;">📊 Secondary List Statistics</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px;">
+      <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #74c0fc;">{{ stats_secondary.count }}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Assigned</div>
+      </div>
+      <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #ffd43b;">{{ stats_secondary.total }}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Total Speedups</div>
+      </div>
+      <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #ff6b6b;">{{ stats_secondary.min }}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Min</div>
+      </div>
+      <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #51cf66;">{{ stats_secondary.max }}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Max</div>
+      </div>
+      <div style="text-align: center; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px;">
+        <div style="font-size: 1.5em; font-weight: bold; color: #74c0fc;">{{ "%.1f"|format(stats_secondary.avg) }}</div>
+        <div style="font-size: 0.85em; color: #aaa;">Average</div>
+      </div>
     </div>
   </div>
-  
-  {% if is_dual_list %}
-  <div class="selection-section" style="margin-top:16px;">
-    <h2>Secondary List (Open to all)</h2>
-    <table>
+  {% endif %}
+  {% endif %}
+
+  <!-- Your Registration Status (moved to bottom) -->
+  {% if selection_state and selection_state.completed and all_preregistrations and all_preregistrations|length > 0 %}
+  <div class="reserve-panel" style="margin-top: 24px;">
+    <h3>📋 Your Registration Status</h3>
+    <p style="font-size: 0.9em; color: #aaa; margin-bottom: 12px;">Complete list of all registered players and their assigned slots.</p>
+    <table style="width: 100%; margin-top: 8px;">
       <thead>
-        <tr><th>#</th><th>Player</th><th>Speedups</th></tr>
+        <tr><th>Player</th><th>Speedups</th><th>Assigned Slot</th><th>List</th></tr>
       </thead>
       <tbody>
-        {% if selected_players_secondary %}
-          {% for p in selected_players_secondary %}
-            <tr>
-              <td data-label="#">{{ loop.index }}</td>
-              <td data-label="Player">{{ p.player_name }}</td>
-              <td data-label="Speedups">{{ p.speedup_days }} days</td>
-            </tr>
-          {% endfor %}
-        {% else %}
-          <tr><td colspan="3">No one registered yet.</td></tr>
-        {% endif %}
+        {% for prereg in all_preregistrations %}
+        <tr>
+          <td data-label="Player">{{ prereg.player_name }}</td>
+          <td data-label="Speedups">{{ prereg.speedup_days }} days</td>
+          <td data-label="Slot">
+            {% if prereg.assigned_slot %}
+              <span style="color: #51cf66;">✓ {{ prereg.assigned_slot }}</span>
+            {% else %}
+              <span style="color: #ff6b6b;">No slot assigned</span>
+            {% endif %}
+          </td>
+          <td data-label="List">{{ prereg.list_type|capitalize }}</td>
+        </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
   {% endif %}
+
   {% endif %}
 {% endblock %}

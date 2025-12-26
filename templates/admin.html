@@ -170,6 +170,43 @@
     </form>
   </div>
 
+  {% if conflicts %}
+  <div class="admin-section" style="border: 2px solid orange; background: rgba(255,165,0,0.1);">
+    <h2>⚠️ Resolve Slot Conflicts</h2>
+    <p>The following slots have multiple players with identical speedups. Choose the winner manually:</p>
+    
+    {% for conflict in conflicts %}
+    <div style="margin: 16px 0; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px;">
+      <p><strong>Slot:</strong> {{ conflict.slot_iso }} | <strong>Speedups:</strong> {{ conflict.speedup_days }} days</p>
+      <p><strong>Conflicting players:</strong> {{ conflict.player_names|join(', ') }}</p>
+      
+      <form method="post" class="admin-form" style="margin-top: 8px;">
+        <input type="hidden" name="action" value="resolve_conflict">
+        <input type="hidden" name="selected_day" value="{{ selected_day }}">
+        <input type="hidden" name="conflict_id" value="{{ conflict.id }}">
+        
+        <div>
+          <label>Choose winner:</label>
+          <select name="winner_name" required>
+            <option value="">-- Select winner --</option>
+            {% for player in conflict.player_names %}
+              <option value="{{ player }}">{{ player }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div>
+          <label>Admin password</label>
+          <input type="password" name="password" placeholder="Enter password" required>
+        </div>
+        
+        <button type="submit" style="background: orange;">✔️ Assign slot to winner</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <div style="margin-top:32px;">
     <a class="btn" href="{{ url_for('index') }}">⚔️ Return to Battle</a>
   </div>

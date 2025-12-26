@@ -25,9 +25,9 @@ def init_schema(db):
             event_day TEXT DEFAULT 'monday',
             player_name TEXT NOT NULL,
             speedup_days INTEGER NOT NULL,
+            preferred_slots TEXT NOT NULL,
             created_at TEXT NOT NULL,
-            status TEXT DEFAULT 'pending',
-            waitlist_position INTEGER,
+            assigned_slot TEXT,
             list_type TEXT DEFAULT 'main'
         );
         """
@@ -42,6 +42,16 @@ def init_schema(db):
         cur.execute("ALTER TABLE preregistrations ADD COLUMN event_day TEXT DEFAULT 'monday';")
     except:
         pass  # Colonne existe déjà
+    # Ajouter la colonne preferred_slots si elle n'existe pas déjà
+    try:
+        cur.execute("ALTER TABLE preregistrations ADD COLUMN preferred_slots TEXT;")
+    except:
+        pass  # Colonne existe déjà
+    # Ajouter la colonne assigned_slot si elle n'existe pas déjà
+    try:
+        cur.execute("ALTER TABLE preregistrations ADD COLUMN assigned_slot TEXT;")
+    except:
+        pass  # Colonne existe déjà
     
     cur.execute(
         """
@@ -50,6 +60,22 @@ def init_schema(db):
             ready_at TEXT,
             completed INTEGER DEFAULT 0,
             completed_at TEXT
+        );
+        """
+    )
+    
+    # Create conflicts table for manual resolution
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS slot_conflicts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_date TEXT NOT NULL,
+            event_day TEXT NOT NULL,
+            slot_iso TEXT NOT NULL,
+            player_names TEXT NOT NULL,
+            speedup_days INTEGER NOT NULL,
+            resolved INTEGER DEFAULT 0,
+            winner TEXT
         );
         """
     )
@@ -101,6 +127,18 @@ def init_schema(db):
 
 app = Flask(__name__)
 app.secret_key = 'dev-secret'
+
+# Add custom Jinja2 filter for JSON parsing
+import json
+@app.template_filter('from_json')
+def from_json_filter(value):
+    """Parse JSON string to Python object"""
+    if not value:
+        return []
+    try:
+        return json.loads(value)
+    except:
+        return []
 
 SLOT_MIN_SPEEDUP_DAYS = 20
 DEFAULT_EVENT_DATE = '2025-12-02'  # YYYY-MM-DD format
@@ -212,8 +250,266 @@ def mark_selection_completed(event_date: str):
     db.commit()
 
 
-def run_selection_if_ready(event_date: str):
-    """If selection time is reached and not completed, pick top N and mark waitlist."""
+def optimize_slot_assignments(event_date: str, event_day: str):
+    """
+    Algorithme d'optimisation pour attribuer les créneaux.
+    Utilise l'algorithme hongrois pour maximiser le total de speedups.
+    - 1 créneau maximum par joueur
+    - 1 joueur maximum par créneau
+    - Pour jeudi (dual list) : optimise d'abord la liste principale, puis la liste secondaire avec les joueurs restants
+    """
+    db = get_db()
+    cur = db.cursor()
+    
+    # Vérifier si c'est un événement dual-list (jeudi)
+    is_dual = (event_day == 'thursday')
+    
+    # PHASE 1 : Optimisation de la liste principale
+    # Récupérer les pré-inscriptions pour la liste principale
+    if is_dual:
+        cur.execute(
+            "SELECT id, player_name, speedup_days, preferred_slots, list_type FROM preregistrations WHERE event_date = ? AND event_day = ? AND list_type = 'main';",
+            (event_date, event_day)
+        )
+    else:
+        cur.execute(
+            "SELECT id, player_name, speedup_days, preferred_slots, list_type FROM preregistrations WHERE event_date = ? AND event_day = ?;",
+            (event_date, event_day)
+        )
+    
+    preregistrations = cur.fetchall()
+    
+    if not preregistrations:
+        db.commit()
+        return 0
+    
+    import json
+    from scipy.optimize import linear_sum_assignment
+    import numpy as np
+    
+    # Construire le mapping joueur -> préférences
+    players = []
+    all_slots = set()
+    player_preferences = {}
+    
+    for prereg in preregistrations:
+        player_id = prereg['id']
+        player_name = prereg['player_name']
+        speedup_days = prereg['speedup_days']
+        list_type = prereg['list_type']
+        try:
+            preferred_slots = json.loads(prereg['preferred_slots'])
+        except:
+            preferred_slots = []
+        
+        if not preferred_slots:
+            continue
+            
+        players.append({
+            'id': player_id,
+            'name': player_name,
+            'speedups': speedup_days,
+            'list_type': list_type
+        })
+        
+        # Ajouter les slots préférés avec list_type
+        player_prefs = []
+        for slot in preferred_slots:
+            slot_key = f"{slot}_{list_type}"
+            all_slots.add(slot_key)
+            player_prefs.append(slot_key)
+        
+        player_preferences[player_id] = {
+            'slots': player_prefs,
+            'speedups': speedup_days
+        }
+    
+    if not players or not all_slots:
+        db.commit()
+        return 0
+    
+    # Créer les listes indexées
+    slot_list = sorted(list(all_slots))
+    player_list = players
+    
+    # Construire la matrice de coûts (on veut maximiser, donc on utilise les speedups)
+    # Taille: nb_players x nb_slots
+    cost_matrix = np.full((len(player_list), len(slot_list)), -1e9, dtype=float)
+    
+    for p_idx, player in enumerate(player_list):
+        player_id = player['id']
+        speedups = player['speedups']
+        prefs = player_preferences[player_id]['slots']
+        
+        for slot_key in prefs:
+            if slot_key in slot_list:
+                s_idx = slot_list.index(slot_key)
+                cost_matrix[p_idx, s_idx] = speedups
+    
+    # Utiliser l'algorithme hongrois pour maximiser (on inverse les coûts)
+    row_ind, col_ind = linear_sum_assignment(cost_matrix, maximize=True)
+    
+    # Extraire les assignations valides (coût > 0)
+    assignments = {}
+    assigned_players = set()
+    
+    for p_idx, s_idx in zip(row_ind, col_ind):
+        if cost_matrix[p_idx, s_idx] > 0:
+            player = player_list[p_idx]
+            slot_key = slot_list[s_idx]
+            # Extraire le slot ISO (enlever le suffix _list_type)
+            slot_iso = slot_key.rsplit('_', 1)[0]
+            
+            assignments[player['id']] = {
+                'slot_iso': slot_iso,
+                'player_name': player['name'],
+                'speedups': player['speedups']
+            }
+            assigned_players.add(player['id'])
+    
+    # Enregistrer les attributions de la liste principale dans la DB
+    for player_id, assignment in assignments.items():
+        cur.execute(
+            "UPDATE preregistrations SET assigned_slot = ? WHERE id = ?;",
+            (assignment['slot_iso'], player_id)
+        )
+    
+    # Copier les assignations vers la table reservations pour affichage
+    cur.execute("DELETE FROM reservations WHERE event_date LIKE ? AND event_day = ?;", (event_date + '%', event_day))
+    
+    for player_id, assignment in assignments.items():
+        # Récupérer les infos du joueur
+        cur.execute("SELECT list_type FROM preregistrations WHERE id = ?;", (player_id,))
+        player_data = cur.fetchone()
+        list_type = player_data['list_type'] if player_data else 'main'
+        
+        now = datetime.now(timezone.utc)
+        cur.execute(
+            'INSERT INTO reservations (event_date, event_day, player_name, speedup_days, reserved_at, list_type, slot_index) VALUES (?, ?, ?, ?, ?, ?, ?);',
+            (assignment['slot_iso'], event_day, assignment['player_name'], assignment['speedups'], now.isoformat(), list_type, 0)
+        )
+    
+    # PHASE 2 : Pour jeudi uniquement, optimiser la liste secondaire avec les joueurs restants
+    if is_dual:
+        # Récupérer TOUS les joueurs qui se sont pré-inscrits
+        cur.execute(
+            "SELECT id, player_name, speedup_days, preferred_slots FROM preregistrations WHERE event_date = ? AND event_day = ?;",
+            (event_date, event_day)
+        )
+        all_preregistrations = cur.fetchall()
+        
+        # Filtrer les joueurs qui n'ont PAS obtenu de créneau (assigned_slot is NULL)
+        remaining_players = []
+        for prereg in all_preregistrations:
+            cur.execute("SELECT assigned_slot FROM preregistrations WHERE id = ?;", (prereg['id'],))
+            result = cur.fetchone()
+            if result and (result['assigned_slot'] is None or result['assigned_slot'] == ''):
+                remaining_players.append(prereg)
+        
+        # Si des joueurs restants, les mettre dans la liste secondaire et optimiser
+        if remaining_players:
+            # Mettre à jour list_type = 'secondary' pour ces joueurs
+            for prereg in remaining_players:
+                cur.execute(
+                    "UPDATE preregistrations SET list_type = 'secondary' WHERE id = ?;",
+                    (prereg['id'],)
+                )
+            
+            # Relancer l'optimisation pour la liste secondaire
+            players_secondary = []
+            all_slots_secondary = set()
+            player_preferences_secondary = {}
+            
+            for prereg in remaining_players:
+                player_id = prereg['id']
+                player_name = prereg['player_name']
+                speedup_days = prereg['speedup_days']
+                try:
+                    preferred_slots = json.loads(prereg['preferred_slots'])
+                except:
+                    preferred_slots = []
+                
+                if not preferred_slots:
+                    continue
+                    
+                players_secondary.append({
+                    'id': player_id,
+                    'name': player_name,
+                    'speedups': speedup_days,
+                    'list_type': 'secondary'
+                })
+                
+                # Ajouter les slots préférés avec list_type = 'secondary'
+                player_prefs = []
+                for slot in preferred_slots:
+                    slot_key = f"{slot}_secondary"
+                    all_slots_secondary.add(slot_key)
+                    player_prefs.append(slot_key)
+                
+                player_preferences_secondary[player_id] = {
+                    'slots': player_prefs,
+                    'speedups': speedup_days
+                }
+            
+            if players_secondary and all_slots_secondary:
+                # Créer les listes indexées pour la liste secondaire
+                slot_list_secondary = sorted(list(all_slots_secondary))
+                player_list_secondary = players_secondary
+                
+                # Construire la matrice de coûts pour la liste secondaire
+                cost_matrix_secondary = np.full((len(player_list_secondary), len(slot_list_secondary)), -1e9, dtype=float)
+                
+                for p_idx, player in enumerate(player_list_secondary):
+                    player_id = player['id']
+                    speedups = player['speedups']
+                    prefs = player_preferences_secondary[player_id]['slots']
+                    
+                    for slot_key in prefs:
+                        if slot_key in slot_list_secondary:
+                            s_idx = slot_list_secondary.index(slot_key)
+                            cost_matrix_secondary[p_idx, s_idx] = speedups
+                
+                # Algorithme hongrois pour la liste secondaire
+                row_ind_secondary, col_ind_secondary = linear_sum_assignment(cost_matrix_secondary, maximize=True)
+                
+                # Extraire les assignations valides pour la liste secondaire
+                assignments_secondary = {}
+                
+                for p_idx, s_idx in zip(row_ind_secondary, col_ind_secondary):
+                    if cost_matrix_secondary[p_idx, s_idx] > 0:
+                        player = player_list_secondary[p_idx]
+                        slot_key = slot_list_secondary[s_idx]
+                        # Extraire le slot ISO (enlever le suffix _secondary)
+                        slot_iso = slot_key.rsplit('_', 1)[0]
+                        
+                        assignments_secondary[player['id']] = {
+                            'slot_iso': slot_iso,
+                            'player_name': player['name'],
+                            'speedups': player['speedups']
+                        }
+                
+                # Enregistrer les attributions de la liste secondaire
+                for player_id, assignment in assignments_secondary.items():
+                    cur.execute(
+                        "UPDATE preregistrations SET assigned_slot = ? WHERE id = ?;",
+                        (assignment['slot_iso'], player_id)
+                    )
+                    
+                    now = datetime.now(timezone.utc)
+                    cur.execute(
+                        'INSERT INTO reservations (event_date, event_day, player_name, speedup_days, reserved_at, list_type, slot_index) VALUES (?, ?, ?, ?, ?, ?, ?);',
+                        (assignment['slot_iso'], event_day, assignment['player_name'], assignment['speedups'], now.isoformat(), 'secondary', 0)
+                    )
+    
+    # Pas de conflits avec l'algorithme hongrois
+    cur.execute("DELETE FROM slot_conflicts WHERE event_date = ? AND event_day = ?;", (event_date, event_day))
+    
+    db.commit()
+    return 0
+
+
+def run_selection_if_ready(event_date: str, event_day: str):
+    """If selection time is reached and not completed, run optimization algorithm."""
     state = get_selection_state(event_date)
     if not state or not state.get('ready_at') or state.get('completed'):
         return state
@@ -226,38 +522,9 @@ def run_selection_if_ready(event_date: str):
     if datetime.now(timezone.utc) < ready_at_dt:
         return state
 
-    db = get_db()
-    cur = db.cursor()
-    # Order candidates by speedups desc, then by first come (ONLY for main list)
-    cur.execute(
-        """
-        SELECT id FROM preregistrations
-        WHERE event_date = ? AND list_type = 'main'
-        ORDER BY speedup_days DESC, datetime(created_at) ASC;
-        """,
-        (event_date,)
-    )
-    rows = cur.fetchall()
-    selected_ids = [r['id'] for r in rows[:SELECTION_TOP_N]]
-    waitlist_ids = [r['id'] for r in rows[SELECTION_TOP_N:]]
-
-    if selected_ids:
-        cur.execute(
-            f"UPDATE preregistrations SET status = 'selected', waitlist_position = NULL WHERE id IN ({','.join('?'*len(selected_ids))});",
-            selected_ids
-        )
-    if waitlist_ids:
-        # Assign waitlist positions starting at 1
-        for pos, pid in enumerate(waitlist_ids, start=1):
-            cur.execute("UPDATE preregistrations SET status = 'waitlist', waitlist_position = ? WHERE id = ?;", (pos, pid))
+    # Lancer l'optimisation
+    num_conflicts = optimize_slot_assignments(event_date, event_day)
     
-    # For secondary list, everyone is auto-selected
-    cur.execute(
-        "UPDATE preregistrations SET status = 'selected' WHERE event_date = ? AND list_type = 'secondary';",
-        (event_date,)
-    )
-
-    db.commit()
     mark_selection_completed(event_date)
     return get_selection_state(event_date)
 
@@ -326,7 +593,7 @@ def index(day='monday'):
     cur = db.cursor()
 
     # Run selection if the deadline is reached
-    selection_state = run_selection_if_ready(event_date_str)
+    selection_state = run_selection_if_ready(event_date_str, day)
     
     # Check if this is a dual-list event (Thursday)
     # Thursday = weekday 3
@@ -335,8 +602,9 @@ def index(day='monday'):
 
     action = request.form.get('action', '') if request.method == 'POST' else ''
 
-    # Handle pre-registration (main or secondary list)
+    # Handle pre-registration with slot selection
     if request.method == 'POST' and action in ('preregister', 'preregister_secondary'):
+        import json
         player_name = request.form.get('player_name', '').strip()
         list_type = 'secondary' if action == 'preregister_secondary' else 'main'
         
@@ -344,28 +612,40 @@ def index(day='monday'):
             speedup_days = int(request.form.get('speedup_days', '0'))
         except ValueError:
             speedup_days = 0
+        
+        # Récupérer les créneaux sélectionnés
+        selected_slots = request.form.getlist('selected_slots[]')
 
         if not player_name:
             flash('Name is required to pre-register.', 'error')
         elif speedup_days <= 0 and list_type == 'main':
             flash('Speedup days must be a positive number.', 'error')
+        elif not selected_slots:
+            flash('You must select at least one preferred slot.', 'error')
         else:
             # Check if player already registered in ANY list
             cur.execute(
-                "SELECT list_type FROM preregistrations WHERE event_date = ? AND event_day = ? AND player_name = ? LIMIT 1;",
+                "SELECT id, list_type FROM preregistrations WHERE event_date = ? AND event_day = ? AND player_name = ? LIMIT 1;",
                 (event_date_str, day, player_name)
             )
             existing = cur.fetchone()
             
             if existing:
-                existing_list = 'main' if existing['list_type'] == 'main' else 'secondary'
-                list_names = {'main': 'principale', 'secondary': 'secondaire'}
-                flash(f'You are already registered in the {list_names[existing_list]} list. You can only register in one list.', 'error')
-            else:
-                now = datetime.now(timezone.utc)
+                # Update existing registration
+                preferred_slots_json = json.dumps(selected_slots)
                 cur.execute(
-                    'INSERT INTO preregistrations (event_date, event_day, player_name, speedup_days, created_at, status, list_type) VALUES (?, ?, ?, ?, ?, ?, ?);',
-                    (event_date_str, day, player_name, speedup_days if list_type == 'main' else 0, now.isoformat(), 'pending', list_type)
+                    'UPDATE preregistrations SET speedup_days = ?, preferred_slots = ? WHERE id = ?;',
+                    (speedup_days, preferred_slots_json, existing['id'])
+                )
+                db.commit()
+                flash(f'Pre-registration updated with {len(selected_slots)} preferred slots!', 'success')
+            else:
+                # New registration
+                now = datetime.now(timezone.utc)
+                preferred_slots_json = json.dumps(selected_slots)
+                cur.execute(
+                    'INSERT INTO preregistrations (event_date, event_day, player_name, speedup_days, preferred_slots, created_at, list_type) VALUES (?, ?, ?, ?, ?, ?, ?);',
+                    (event_date_str, day, player_name, speedup_days, preferred_slots_json, now.isoformat(), list_type)
                 )
                 db.commit()
                 
@@ -377,7 +657,7 @@ def index(day='monday'):
                     selection_state = get_selection_state(event_date_str)
                 
                 list_msg = 'secondary list' if list_type == 'secondary' else 'main list'
-                flash(f'Pre-registration saved in {list_msg}! Selection will pick the top 20 once the timer ends.', 'success')
+                flash(f'Pre-registration saved in {list_msg} with {len(selected_slots)} preferred slots! Optimization will run in 24h.', 'success')
 
     # Handle pre-registration (OLD - keep for compatibility)
     elif request.method == 'POST' and action == 'preregister_old_compat':
@@ -598,19 +878,63 @@ def index(day='monday'):
     # Get current theme
     theme = get_current_theme()
 
-    # Fetch selection lists for UI (main list)
-    cur.execute("SELECT player_name, speedup_days FROM preregistrations WHERE event_date = ? AND event_day = ? AND list_type = 'main' AND status = 'selected' ORDER BY speedup_days DESC, datetime(created_at) ASC LIMIT ?;", (event_date_str, day, SELECTION_TOP_N))
-    selected_players = cur.fetchall()
-    cur.execute("SELECT player_name, speedup_days, waitlist_position FROM preregistrations WHERE event_date = ? AND event_day = ? AND list_type = 'main' AND status = 'waitlist' ORDER BY waitlist_position ASC;", (event_date_str, day))
-    waitlist_players = cur.fetchall()
+    # Fetch assigned slots and conflicts
+    cur.execute("SELECT player_name, speedup_days, preferred_slots, assigned_slot, list_type FROM preregistrations WHERE event_date = ? AND event_day = ?;", (event_date_str, day))
+    all_preregistrations = cur.fetchall()
     
-    # Fetch secondary list if dual-list event
-    selected_players_secondary = []
-    if is_dual_list:
-        cur.execute("SELECT player_name, speedup_days FROM preregistrations WHERE event_date = ? AND event_day = ? AND list_type = 'secondary' AND status = 'selected' ORDER BY datetime(created_at) ASC;", (event_date_str, day))
-        selected_players_secondary = cur.fetchall()
+    # Get conflicts
+    cur.execute("SELECT id, slot_iso, player_names, speedup_days, resolved, winner FROM slot_conflicts WHERE event_date = ? AND event_day = ? AND resolved = 0;", (event_date_str, day))
+    conflicts = cur.fetchall()
 
     selection_state = selection_state or get_selection_state(event_date_str)
+
+    # Calculate statistics for main and secondary lists
+    stats_main = None
+    stats_secondary = None
+    
+    if selection_state and selection_state.get('completed'):
+        # Main list stats
+        cur.execute("""
+            SELECT 
+                COUNT(*) as count,
+                COALESCE(SUM(speedup_days), 0) as total,
+                COALESCE(MIN(speedup_days), 0) as min,
+                COALESCE(MAX(speedup_days), 0) as max,
+                COALESCE(AVG(speedup_days), 0) as avg
+            FROM preregistrations 
+            WHERE event_day = ? AND list_type = 'main' AND assigned_slot IS NOT NULL AND assigned_slot != '';
+        """, (day,))
+        row_main = cur.fetchone()
+        if row_main and row_main['count'] > 0:
+            stats_main = {
+                'count': row_main['count'],
+                'total': row_main['total'],
+                'min': row_main['min'],
+                'max': row_main['max'],
+                'avg': row_main['avg']
+            }
+        
+        # Secondary list stats (only for dual-list events)
+        if is_dual_list:
+            cur.execute("""
+                SELECT 
+                    COUNT(*) as count,
+                    COALESCE(SUM(speedup_days), 0) as total,
+                    COALESCE(MIN(speedup_days), 0) as min,
+                    COALESCE(MAX(speedup_days), 0) as max,
+                    COALESCE(AVG(speedup_days), 0) as avg
+                FROM preregistrations 
+                WHERE event_day = ? AND list_type = 'secondary' AND assigned_slot IS NOT NULL AND assigned_slot != '';
+            """, (day,))
+            row_secondary = cur.fetchone()
+            if row_secondary and row_secondary['count'] > 0:
+                stats_secondary = {
+                    'count': row_secondary['count'],
+                    'total': row_secondary['total'],
+                    'min': row_secondary['min'],
+                    'max': row_secondary['max'],
+                    'avg': row_secondary['avg']
+                }
 
     return render_template(
         'index.html',
@@ -625,11 +949,12 @@ def index(day='monday'):
         countdown_target=countdown_target,
         theme=theme,
         selection_state=selection_state,
-        selected_players=selected_players,
-        waitlist_players=waitlist_players,
-        selected_players_secondary=selected_players_secondary,
+        all_preregistrations=all_preregistrations,
+        conflicts=conflicts,
         is_dual_list=is_dual_list,
-        selection_top_n=SELECTION_TOP_N
+        selection_top_n=SELECTION_TOP_N,
+        stats_main=stats_main,
+        stats_secondary=stats_secondary
     )
 
 # Admin route to reset reservations and set new event date
@@ -748,6 +1073,45 @@ def admin():
             else:
                 flash('Invalid theme.', 'error')
         
+        elif action == 'resolve_conflict':
+            # Résoudre un conflit manuellement
+            import json
+            conflict_id = request.form.get('conflict_id', '').strip()
+            winner_name = request.form.get('winner_name', '').strip()
+            
+            if not conflict_id or not winner_name:
+                flash('Missing conflict ID or winner name.', 'error')
+            else:
+                # Get conflict details
+                cur.execute("SELECT event_date, event_day, slot_iso, player_names FROM slot_conflicts WHERE id = ?;", (conflict_id,))
+                conflict = cur.fetchone()
+                
+                if not conflict:
+                    flash('Conflict not found.', 'error')
+                else:
+                    player_names = json.loads(conflict['player_names'])
+                    if winner_name not in player_names:
+                        flash('Winner must be one of the conflicting players.', 'error')
+                    else:
+                        # Mark conflict as resolved
+                        cur.execute("UPDATE slot_conflicts SET resolved = 1, winner = ? WHERE id = ?;", (winner_name, conflict_id))
+                        
+                        # Find the winner's preregistration and assign the slot
+                        cur.execute(
+                            "SELECT id FROM preregistrations WHERE event_date = ? AND event_day = ? AND player_name = ?;",
+                            (conflict['event_date'], conflict['event_day'], winner_name)
+                        )
+                        winner_prereg = cur.fetchone()
+                        
+                        if winner_prereg:
+                            cur.execute(
+                                "UPDATE preregistrations SET assigned_slot = ? WHERE id = ?;",
+                                (conflict['slot_iso'], winner_prereg['id'])
+                            )
+                        
+                        db.commit()
+                        flash(f'Conflict resolved! {winner_name} gets the slot.', 'success')
+        
         return redirect(url_for('admin', day=selected_day))
     
     # GET: show admin page for selected day
@@ -766,7 +1130,21 @@ def admin():
     cur.execute("SELECT value FROM config WHERE key = 'theme';")
     theme_config = cur.fetchone()
     theme_mode = 'auto' if theme_config is None else theme_config['value']
-    return render_template('admin.html', current_date=current_date, reservation_count=reservation_count, reservations=reservations, registration_open=registration_open, theme=theme, theme_mode=theme_mode, selected_day=selected_day)
+    
+    # Get unresolved conflicts for this day
+    import json
+    cur.execute("SELECT id, slot_iso, player_names, speedup_days FROM slot_conflicts WHERE event_day = ? AND resolved = 0;", (selected_day,))
+    conflicts_raw = cur.fetchall()
+    conflicts = []
+    for c in conflicts_raw:
+        conflicts.append({
+            'id': c['id'],
+            'slot_iso': c['slot_iso'],
+            'player_names': json.loads(c['player_names']),
+            'speedup_days': c['speedup_days']
+        })
+    
+    return render_template('admin.html', current_date=current_date, reservation_count=reservation_count, reservations=reservations, registration_open=registration_open, theme=theme, theme_mode=theme_mode, selected_day=selected_day, conflicts=conflicts)
 
 # Keep /slots as alias
 @app.route('/slots')
