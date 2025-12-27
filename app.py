@@ -1002,6 +1002,26 @@ def admin():
                 flash('Reservation deleted.', 'success')
             else:
                 flash('No reservation selected.', 'error')
+
+        elif action == 'delete_prereg':
+            # Delete a single pre-registration and any of their reservations
+            prereg_id = request.form.get('prereg_id', '').strip()
+            current_date = get_event_date(selected_day)
+            if prereg_id:
+                # Find player name for feedback and cleanup
+                cur.execute('SELECT player_name FROM preregistrations WHERE id = ?;', (prereg_id,))
+                row = cur.fetchone()
+                player_name = row['player_name'] if row else None
+
+                # Delete preregistration
+                cur.execute('DELETE FROM preregistrations WHERE id = ?;', (prereg_id,))
+                # Also delete any reservations for this player on the selected day
+                if player_name:
+                    cur.execute('DELETE FROM reservations WHERE event_day = ? AND player_name = ?;', (selected_day, player_name))
+                db.commit()
+                flash(f'Pré-inscription de {player_name} supprimée avec succès.', 'success')
+            else:
+                flash('No pre-registration selected.', 'error')
         
         elif action == 'set_event_settings':
             # Combined event date + registration open time
@@ -1122,6 +1142,9 @@ def admin():
     # Get reservations for the current event date and day (include list_type)
     cur.execute("SELECT id, event_date, player_name, speedup_days, list_type FROM reservations WHERE event_date LIKE ? AND event_day = ? ORDER BY list_type, event_date;", (current_date + '%', selected_day))
     reservations = cur.fetchall()
+    # Get preregistrations for this day/date
+    cur.execute("SELECT id, player_name, speedup_days, list_type, created_at FROM preregistrations WHERE event_date = ? AND event_day = ? ORDER BY list_type, datetime(created_at) ASC;", (current_date, selected_day))
+    preregistrations = cur.fetchall()
     # Get registration open time for this day
     registration_open = get_registration_open(selected_day)
     # Get current theme
@@ -1144,7 +1167,7 @@ def admin():
             'speedup_days': c['speedup_days']
         })
     
-    return render_template('admin.html', current_date=current_date, reservation_count=reservation_count, reservations=reservations, registration_open=registration_open, theme=theme, theme_mode=theme_mode, selected_day=selected_day, conflicts=conflicts)
+    return render_template('admin.html', current_date=current_date, reservation_count=reservation_count, reservations=reservations, registration_open=registration_open, theme=theme, theme_mode=theme_mode, selected_day=selected_day, conflicts=conflicts, preregistrations=preregistrations)
 
 # Keep /slots as alias
 @app.route('/slots')

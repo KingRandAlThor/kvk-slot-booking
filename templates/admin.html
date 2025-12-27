@@ -108,7 +108,7 @@
           {% if main_list_reservations %}
             <optgroup label="📋 Main List">
             {% for r in main_list_reservations %}
-              <option value="{{ r['id'] }}">[Main] {{ r['slot_start'][:16] }} - {{ r['player_name'] }} ({{ r['speedup_days'] }} days)</option>
+              <option value="{{ r['id'] }}">[Main] {{ r['event_date'][:16].replace('T', ' ') }} - {{ r['player_name'] }} ({{ r['speedup_days'] }} days)</option>
             {% endfor %}
             </optgroup>
           {% endif %}
@@ -116,7 +116,7 @@
           {% if secondary_list_reservations %}
             <optgroup label="📋 Secondary List">
             {% for r in secondary_list_reservations %}
-              <option value="{{ r['id'] }}">[List 2] {{ r['slot_start'][:16] }} - {{ r['player_name'] }} ({{ r['speedup_days'] }} days)</option>
+              <option value="{{ r['id'] }}">[List 2] {{ r['event_date'][:16].replace('T', ' ') }} - {{ r['player_name'] }} ({{ r['speedup_days'] }} days)</option>
             {% endfor %}
             </optgroup>
           {% endif %}
@@ -130,6 +130,48 @@
     </form>
     {% else %}
     <p style="color:#888;">No reservations to delete.</p>
+    {% endif %}
+  </div>
+
+  <div class="admin-section">
+    <h2>🗑️ Supprimer une pré-inscription</h2>
+    <p style="font-size:0.9em; color:#ff6b35; margin-bottom:12px;">⚠️ Supprime la pré-inscription et toutes les réservations associées pour ce joueur.</p>
+    {% if preregistrations and preregistrations|length > 0 %}
+    <form method="post" class="admin-form" onsubmit="return confirm('⚠️ ATTENTION : Supprimer cette pré-inscription ET toutes les réservations de ce joueur pour ce jour ?\n\nCette action est irréversible.');"><script>document.currentForm=document.currentScript.parentElement;</script>
+      <input type="hidden" name="action" value="delete_prereg">
+      <input type="hidden" name="selected_day" value="{{ selected_day }}">
+      <div>
+        <label>Sélectionner la pré-inscription</label>
+        <select name="prereg_id" required>
+          <option value="">-- Sélectionner --</option>
+          {% set prereg_main = preregistrations | selectattr('list_type', 'equalto', 'main') | list %}
+          {% set prereg_secondary = preregistrations | selectattr('list_type', 'equalto', 'secondary') | list %}
+
+          {% if prereg_main %}
+            <optgroup label="📋 Liste principale">
+            {% for p in prereg_main %}
+              <option value="{{ p['id'] }}">[Main] {{ p['player_name'] }} — {{ p['speedup_days'] }} jours — {{ p['created_at'][:16].replace('T', ' ') }} UTC</option>
+            {% endfor %}
+            </optgroup>
+          {% endif %}
+
+          {% if prereg_secondary %}
+            <optgroup label="📋 Liste secondaire">
+            {% for p in prereg_secondary %}
+              <option value="{{ p['id'] }}">[List 2] {{ p['player_name'] }} — {{ p['speedup_days'] }} jours — {{ p['created_at'][:16].replace('T', ' ') }} UTC</option>
+            {% endfor %}
+            </optgroup>
+          {% endif %}
+        </select>
+      </div>
+      <div>
+        <label>Mot de passe admin</label>
+        <input type="password" name="password" placeholder="Entrer le mot de passe" required>
+      </div>
+      <button type="submit" style="background:#e74c3c;">🗑️ Supprimer la pré-inscription</button>
+    </form>
+    {% else %}
+    <p style="color:#888;">Aucune pré-inscription à supprimer.</p>
     {% endif %}
   </div>
 

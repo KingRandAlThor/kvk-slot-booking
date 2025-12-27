@@ -4,7 +4,7 @@ import os
 
 # Add your project directory to the sys.path
 # Replace 'yourusername' with your actual PythonAnywhere username
-project_home = '/home/yourusername/kvk'
+project_home = os.path.dirname(__file__)
 if project_home not in sys.path:
     sys.path.insert(0, project_home)
 
