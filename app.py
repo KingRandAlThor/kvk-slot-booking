@@ -581,7 +581,10 @@ def index(day='monday'):
 
     if registration_open_str:
         try:
-            open_dt = datetime.fromisoformat(registration_open_str).replace(tzinfo=timezone.utc)
+            open_dt = datetime.fromisoformat(registration_open_str)
+            # Ensure timezone is set
+            if open_dt.tzinfo is None:
+                open_dt = open_dt.replace(tzinfo=timezone.utc)
             now = datetime.now(timezone.utc)
             if now < open_dt:
                 registrations_open = False
