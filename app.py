@@ -15,6 +15,16 @@ def get_db():
     return db
 
 
+def log_deletion(db, table_name, record_id, player_name=None, data_backup=None):
+    """Enregistre une suppression dans le log d'audit"""
+    cur = db.cursor()
+    deleted_at = datetime.now(timezone.utc).isoformat()
+    cur.execute(
+        "INSERT INTO deletion_log (table_name, record_id, player_name, deleted_at, data_backup) VALUES (?, ?, ?, ?, ?);",
+        (table_name, record_id, player_name, deleted_at, data_backup)
+    )
+    db.commit()
+
 def init_schema(db):
     cur = db.cursor()
     cur.execute(
@@ -123,6 +133,21 @@ def init_schema(db):
         """
     )
     
+    # Create deletion_log table for tracking deletions
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS deletion_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            table_name TEXT NOT NULL,
+            record_id INTEGER NOT NULL,
+            player_name TEXT,
+            deleted_by TEXT DEFAULT 'admin',
+            deleted_at TEXT NOT NULL,
+            data_backup TEXT
+        );
+        """
+    )
+    
     db.commit()
 
 app = Flask(__name__)
@@ -142,7 +167,7 @@ def from_json_filter(value):
 
 SLOT_MIN_SPEEDUP_DAYS = 20
 DEFAULT_EVENT_DATE = '2025-12-02'  # YYYY-MM-DD format
-ADMIN_PASSWORD = 'kvk2025'  # Change this to your desired password
+ADMIN_PASSWORD = 'AidxRand2026Love'  # Change this to your desired password
 SELECTION_TOP_N = 20
 
 # Event types by weekday (0=Monday, 1=Tuesday, etc.)
@@ -980,6 +1005,12 @@ def admin():
         
         if action == 'reset':
             # Delete all reservations for this day
+            # Log all reservations before deleting
+            cur.execute('SELECT id, player_name FROM reservations WHERE event_day = ?;', (selected_day,))
+            reservations_to_delete = cur.fetchall()
+            for res in reservations_to_delete:
+                log_deletion(db, 'reservations', res['id'], res['player_name'])
+            
             cur.execute('DELETE FROM reservations WHERE event_day = ?;', (selected_day,))
             db.commit()
             flash(f'All reservations for {selected_day} have been cleared.', 'success')
@@ -991,6 +1022,12 @@ def admin():
                 datetime.strptime(new_date, '%Y-%m-%d')
                 set_event_date(new_date, selected_day)
                 # Also clear reservations when changing date
+                # Log all reservations before deleting
+                cur.execute('SELECT id, player_name FROM reservations WHERE event_day = ?;', (selected_day,))
+                reservations_to_delete = cur.fetchall()
+                for res in reservations_to_delete:
+                    log_deletion(db, 'reservations', res['id'], res['player_name'])
+                
                 cur.execute('DELETE FROM reservations WHERE event_day = ?;', (selected_day,))
                 db.commit()
                 flash(f'Event date for {selected_day} changed to {new_date}. All reservations cleared.', 'success')
@@ -1000,6 +1037,14 @@ def admin():
         elif action == 'delete_one':
             reservation_id = request.form.get('reservation_id', '').strip()
             if reservation_id:
+                # Get player name before deleting
+                cur.execute('SELECT player_name FROM reservations WHERE id = ?;', (reservation_id,))
+                res = cur.fetchone()
+                player_name = res['player_name'] if res else None
+                
+                # Log the deletion
+                log_deletion(db, 'reservations', int(reservation_id), player_name)
+                
                 cur.execute('DELETE FROM reservations WHERE id = ?;', (reservation_id,))
                 db.commit()
                 flash('Reservation deleted.', 'success')
@@ -1016,10 +1061,19 @@ def admin():
                 row = cur.fetchone()
                 player_name = row['player_name'] if row else None
 
+                # Log preregistration deletion
+                log_deletion(db, 'preregistrations', int(prereg_id), player_name)
+                
                 # Delete preregistration
                 cur.execute('DELETE FROM preregistrations WHERE id = ?;', (prereg_id,))
                 # Also delete any reservations for this player on the selected day
                 if player_name:
+                    # Log reservations before deleting
+                    cur.execute('SELECT id FROM reservations WHERE event_day = ? AND player_name = ?;', (selected_day, player_name))
+                    res_to_delete = cur.fetchall()
+                    for res in res_to_delete:
+                        log_deletion(db, 'reservations', res['id'], player_name)
+                    
                     cur.execute('DELETE FROM reservations WHERE event_day = ? AND player_name = ?;', (selected_day, player_name))
                 db.commit()
                 flash(f'Pré-inscription de {player_name} supprimée avec succès.', 'success')
@@ -1274,12 +1328,26 @@ def kvk_training():
         elif action == 'remove_player':
             player_id = request.form.get('player_id', '').strip()
             if player_id:
+                # Get player info before deleting
+                cur.execute('SELECT name FROM training_players WHERE id = ?;', (player_id,))
+                player_row = cur.fetchone()
+                player_name = player_row['name'] if player_row else None
+                
+                # Log the deletion
+                log_deletion(db, 'training_players', int(player_id), player_name)
+                
                 cur.execute('DELETE FROM training_players WHERE id = ?;', (player_id,))
                 db.commit()
                 balance_teams(db)
                 flash('Player removed and teams rebalanced!', 'success')
         
         elif action == 'reset_all':
+            # Log all players before deleting
+            cur.execute('SELECT id, name FROM training_players;')
+            all_players = cur.fetchall()
+            for player in all_players:
+                log_deletion(db, 'training_players', player['id'], player['name'])
+            
             cur.execute('DELETE FROM training_players;')
             db.commit()
             flash('All teams reset!', 'success')
