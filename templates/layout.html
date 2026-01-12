@@ -44,6 +44,26 @@
     <img class="rydak" src="/static/Rydak.JPEG.png" style="left: 70%; animation-duration: 18s; animation-delay: 2s;">
     <img class="rydak" src="/static/Rydak.JPEG.png" style="left: 90%; animation-duration: 13s; animation-delay: 5s;">
     {% endif %}
+    
+    <!-- Rand on vacation - BLOCKING OVERLAY -->
+    <div id="vacationOverlay" class="vacation-overlay">
+      <div class="dancing-man">🕺💃🕺</div>
+      <div class="vacation-badge">👑 RAND IS ON VACATION 🏖️<br>The site is closed! 🌴</div>
+      <button class="remove-vacation-btn" onclick="removeVacation()">⚔️ FORCE ACCESS ⚔️</button>
+    </div>
+    
+    <script>
+      function removeVacation() {
+        const password = prompt('🔐 Enter the password to access the site:');
+        if (password === 'ArteJTM<3') {
+          document.getElementById('vacationOverlay').classList.add('hidden');
+          alert('✅ Access granted! Welcome!');
+        } else if (password !== null) {
+          alert('❌ Incorrect password! The site remains blocked.');
+        }
+      }
+    </script>
+    
     <div class="container">
       {% block content %}{% endblock %}
       <footer>

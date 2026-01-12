@@ -679,3 +679,106 @@ footer {
     display: flex;
   }
 }
+
+/* Bonhomme qui danse - Rand en vacances - OVERLAY PLEIN ÉCRAN */
+.vacation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.vacation-overlay.hidden {
+  display: none;
+}
+
+.dancing-man {
+  font-size: 200px;
+  animation: dance-crazy 0.5s infinite ease-in-out;
+  filter: drop-shadow(0 0 50px rgba(218, 165, 32, 1));
+  margin-bottom: 40px;
+}
+
+.vacation-badge {
+  background: linear-gradient(135deg, #daa520, #ffd700);
+  color: #0a0a0f;
+  padding: 20px 40px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 32px;
+  box-shadow: 0 10px 40px rgba(218, 165, 32, 0.8);
+  animation: pulse-intense 1s infinite;
+  font-family: 'Cinzel', serif;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.remove-vacation-btn {
+  background: linear-gradient(135deg, #8b0000, #dc143c);
+  color: white;
+  border: 3px solid #ffd700;
+  padding: 15px 35px;
+  font-size: 20px;
+  font-weight: 700;
+  border-radius: 25px;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  box-shadow: 0 5px 20px rgba(220, 20, 60, 0.5);
+  transition: all 0.3s ease;
+  animation: button-pulse 2s infinite;
+}
+
+.remove-vacation-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 30px rgba(220, 20, 60, 0.8);
+  background: linear-gradient(135deg, #dc143c, #ff1744);
+}
+
+@keyframes dance-crazy {
+  0% {
+    transform: rotate(-20deg) translateY(0) scale(1);
+  }
+  20% {
+    transform: rotate(20deg) translateY(-30px) scale(1.1);
+  }
+  40% {
+    transform: rotate(-20deg) translateY(0) scale(0.9);
+  }
+  60% {
+    transform: rotate(20deg) translateY(-30px) scale(1.1);
+  }
+  80% {
+    transform: rotate(-20deg) translateY(0) scale(0.9);
+  }
+  100% {
+    transform: rotate(20deg) translateY(-30px) scale(1);
+  }
+}
+
+@keyframes pulse-intense {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 10px 40px rgba(218, 165, 32, 0.8);
+  }
+  50% {
+    transform: scale(1.15);
+    box-shadow: 0 15px 60px rgba(218, 165, 32, 1);
+  }
+}
+
+@keyframes button-pulse {
+  0%, 100% {
+    box-shadow: 0 5px 20px rgba(220, 20, 60, 0.5);
+  }
+  50% {
+    box-shadow: 0 8px 40px rgba(220, 20, 60, 1);
+  }
+}
