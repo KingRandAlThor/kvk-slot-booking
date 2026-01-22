@@ -14,25 +14,107 @@
   {% endwith %}
 
   <div class="admin-section">
-    <h2>📅 Select Event Day</h2>
+    <h2>📅 Admin Panel</h2>
     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px;">
       <a href="{{ url_for('admin', day='monday') }}" style="text-decoration: none;">
-        <button type="button" style="{% if selected_day == 'monday' %}background: #daa520; color: #000;{% else %}background: #444;{% endif %}">
+        <button type="button" class="day-selector-btn {% if selected_day == 'monday' %}active{% endif %}">
           🏗️ Monday - Construction
         </button>
       </a>
       <a href="{{ url_for('admin', day='tuesday') }}" style="text-decoration: none;">
-        <button type="button" style="{% if selected_day == 'tuesday' %}background: #daa520; color: #000;{% else %}background: #444;{% endif %}">
+        <button type="button" class="day-selector-btn {% if selected_day == 'tuesday' %}active{% endif %}">
           🔬 Tuesday - Research
         </button>
       </a>
       <a href="{{ url_for('admin', day='thursday') }}" style="text-decoration: none;">
-        <button type="button" style="{% if selected_day == 'thursday' %}background: #daa520; color: #000;{% else %}background: #444;{% endif %}">
-          ⚔️ Thursday - Troop Training (Dual List)
+        <button type="button" class="day-selector-btn {% if selected_day == 'thursday' %}active{% endif %}">
+          ⚔️ Thursday - Troop Training
+        </button>
+      </a>
+      <a href="{{ url_for('admin', day='kvk_week') }}" style="text-decoration: none;">
+        <button type="button" class="day-selector-btn {% if selected_day == 'kvk_week' %}active{% endif %}" style="background: linear-gradient(135deg, #8e44ad, #9b59b6); border-color: #9b59b6;">
+          📆 Configure KVK Week
         </button>
       </a>
     </div>
     
+    {% if selected_day == 'kvk_week' %}
+    <!-- KVK Week Configuration Tab -->
+    <div class="settings-info">
+      <p style="font-size:1.1em; color:#9b59b6; font-weight:600;">📆 Configure Entire KVK Week</p>
+      <p style="color:#888; font-size:0.95em;">Select Monday date - all other dates are calculated automatically</p>
+    </div>
+    
+    <form method="post" class="admin-form" style="margin-top:24px;" onsubmit="return confirm('⚠️ WARNING: This will DELETE all preregistrations, reservations, and conflicts for ALL days.\n\nConfigure the entire KVK week?');">
+      <input type="hidden" name="action" value="configure_week">
+      
+      <!-- Hidden fields with ISO format for backend -->
+      <input type="hidden" id="monday_open_hidden" name="monday_open">
+      <input type="hidden" id="tuesday_date_hidden" name="tuesday_date">
+      <input type="hidden" id="tuesday_open_hidden" name="tuesday_open">
+      <input type="hidden" id="thursday_date_hidden" name="thursday_date">
+      <input type="hidden" id="thursday_open_hidden" name="thursday_open">
+      
+      <!-- Monday Selection (Primary) -->
+      <div style="background:linear-gradient(135deg, rgba(218, 165, 32, 0.15), rgba(139, 69, 19, 0.1)); padding:20px; border-radius:12px; border:2px solid rgba(218, 165, 32, 0.4); margin-bottom:24px;">
+        <h3 style="margin:0 0 16px 0; color:#daa520; font-size:1.3em;">🏗️ Monday Construction</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label style="font-size:1.05em; color:#daa520; font-weight:600;">📅 Event Date</label>
+            <input type="date" id="monday_date" name="monday_date" required style="border:3px solid #daa520; background:rgba(218, 165, 32, 0.1); font-size:1.05em; padding:14px; font-weight:600;">
+          </div>
+          <div class="form-col">
+            <label style="font-size:0.95em; color:#c19a6b;">⏰ Pre-registration Opens</label>
+            <input type="text" id="monday_open_display" readonly style="background:rgba(210, 105, 30, 0.08); color:#c19a6b; font-weight:600; cursor:not-allowed; border:2px dashed rgba(210, 105, 30, 0.3);">
+            <small style="color:#888; font-size:0.85em; display:block; margin-top:4px;">📍 Auto: Saturday 00:00 UTC</small>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tuesday (Auto-calculated) -->
+      <div style="background:rgba(210, 105, 30, 0.05); padding:18px; border-radius:10px; border:2px dashed rgba(210, 105, 30, 0.25); margin-bottom:16px; opacity:0.9;">
+        <h3 style="margin:0 0 14px 0; color:#d2691e; font-size:1.15em;">🔬 Tuesday Research</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label style="font-size:0.95em; color:#a0522d;">📅 Event Date</label>
+            <input type="text" id="tuesday_date_display" readonly style="background:rgba(210, 105, 30, 0.08); color:#a0522d; font-weight:600; cursor:not-allowed; border:2px dashed rgba(210, 105, 30, 0.3);">
+            <small style="color:#888; font-size:0.85em; display:block; margin-top:4px;">📍 Auto: Monday + 1 day</small>
+          </div>
+          <div class="form-col">
+            <label style="font-size:0.95em; color:#a0522d;">⏰ Pre-registration Opens</label>
+            <input type="text" id="tuesday_open_display" readonly style="background:rgba(210, 105, 30, 0.08); color:#a0522d; font-weight:600; cursor:not-allowed; border:2px dashed rgba(210, 105, 30, 0.3);">
+            <small style="color:#888; font-size:0.85em; display:block; margin-top:4px;">📍 Auto: Sunday 00:00 UTC</small>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Thursday (Auto-calculated) -->
+      <div style="background:rgba(210, 105, 30, 0.05); padding:18px; border-radius:10px; border:2px dashed rgba(210, 105, 30, 0.25); margin-bottom:24px; opacity:0.9;">
+        <h3 style="margin:0 0 14px 0; color:#d2691e; font-size:1.15em;">⚔️ Thursday Troop Training</h3>
+        <div class="form-row">
+          <div class="form-col">
+            <label style="font-size:0.95em; color:#a0522d;">📅 Event Date</label>
+            <input type="text" id="thursday_date_display" readonly style="background:rgba(210, 105, 30, 0.08); color:#a0522d; font-weight:600; cursor:not-allowed; border:2px dashed rgba(210, 105, 30, 0.3);">
+            <small style="color:#888; font-size:0.85em; display:block; margin-top:4px;">📍 Auto: Monday + 3 days</small>
+          </div>
+          <div class="form-col">
+            <label style="font-size:0.95em; color:#a0522d;">⏰ Pre-registration Opens</label>
+            <input type="text" id="thursday_open_display" readonly style="background:rgba(210, 105, 30, 0.08); color:#a0522d; font-weight:600; cursor:not-allowed; border:2px dashed rgba(210, 105, 30, 0.3);">
+            <small style="color:#888; font-size:0.85em; display:block; margin-top:4px;">📍 Auto: Tuesday 00:00 UTC</small>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <label>🔑 Admin password</label>
+        <input type="password" name="password" placeholder="Enter password" required>
+      </div>
+      
+      <button type="submit" style="background:linear-gradient(135deg, #8e44ad, #9b59b6); font-size:1.1em; padding:14px 28px;">📆 Configure Entire Week</button>
+    </form>
+    
+    {% else %}
+    <!-- Day Management Tab (Monday/Tuesday/Thursday) -->
     <div class="settings-info">
       <p><strong>Managing:</strong> <span style="color:#daa520; text-transform: capitalize;">{{ selected_day }}</span></p>
       <p><strong>Event Date:</strong> <span style="color:#daa520;">{{ current_date }}</span></p>
@@ -174,6 +256,7 @@
     <p style="color:#888;">Aucune pré-inscription à supprimer.</p>
     {% endif %}
   </div>
+  {% endif %}
 
   <div class="admin-section">
     <h2>🎨 Theme Settings</h2>
@@ -181,13 +264,15 @@
       <p><strong>Current theme:</strong> 
         {% if theme == 'christmas' %}
         <span style="color:#c41e3a;">🎄 Christmas</span>
+        {% elif theme == 'cookies' %}
+        <span style="color:#d2691e;">🍪 Winter Cookies</span>
         {% else %}
         <span style="color:#daa520;">👑 KINGSHOT</span>
         {% endif %}
       </p>
       <p><strong>Mode:</strong> 
         {% if theme_mode == 'auto' %}
-        <span style="color:#7fff00;">Auto (Christmas in December)</span>
+        <span style="color:#7fff00;">Auto (Dec=Christmas, Jan25-Feb10=Cookies)</span>
         {% else %}
         <span style="color:#ff6b35;">Manual: {{ theme_mode }}</span>
         {% endif %}
@@ -199,9 +284,10 @@
       <div>
         <label>Select Theme</label>
         <select name="theme" required>
-          <option value="auto" {% if theme_mode == 'auto' %}selected{% endif %}>🔄 Auto (Christmas in December)</option>
+          <option value="auto" {% if theme_mode == 'auto' %}selected{% endif %}>🔄 Auto (Season-based)</option>
           <option value="kingshot" {% if theme_mode == 'kingshot' %}selected{% endif %}>👑 KINGSHOT (Royal Gold)</option>
           <option value="christmas" {% if theme_mode == 'christmas' %}selected{% endif %}>🎄 Christmas (Holiday)</option>
+          <option value="cookies" {% if theme_mode == 'cookies' %}selected{% endif %}>🍪 Winter Cookies (Jan-Feb)</option>
         </select>
       </div>
       <div>
@@ -252,4 +338,64 @@
   <div style="margin-top:32px;">
     <a class="btn" href="{{ url_for('index') }}">⚔️ Return to Battle</a>
   </div>
+
+  <script>
+    // Auto-calculate all dates from Monday selection
+    function calculateWeekDates() {
+      const mondayInput = document.getElementById('monday_date');
+      if (mondayInput && mondayInput.value) {
+        // Parse date in UTC to avoid timezone issues
+        const [year, month, day] = mondayInput.value.split('-').map(Number);
+        const monday = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+        
+        // Calculate Tuesday (Monday + 1 day)
+        const tuesday = new Date(monday);
+        tuesday.setUTCDate(tuesday.getUTCDate() + 1);
+        const tuesdayStr = tuesday.toISOString().slice(0, 10);
+        
+        // Calculate Thursday (Monday + 3 days)
+        const thursday = new Date(monday);
+        thursday.setUTCDate(thursday.getUTCDate() + 3);
+        const thursdayStr = thursday.toISOString().slice(0, 10);
+        
+        // Calculate pre-registration dates (2 days before each event at 00:00 UTC)
+        const mondayOpen = new Date(monday);
+        mondayOpen.setUTCDate(mondayOpen.getUTCDate() - 2); // Saturday
+        const mondayOpenStr = mondayOpen.toISOString().slice(0, 16).replace('T', ' ');
+        
+        const tuesdayOpen = new Date(tuesday);
+        tuesdayOpen.setUTCDate(tuesdayOpen.getUTCDate() - 2); // Sunday
+        const tuesdayOpenStr = tuesdayOpen.toISOString().slice(0, 16).replace('T', ' ');
+        
+        const thursdayOpen = new Date(thursday);
+        thursdayOpen.setUTCDate(thursdayOpen.getUTCDate() - 2); // Tuesday
+        const thursdayOpenStr = thursdayOpen.toISOString().slice(0, 16).replace('T', ' ');
+        
+        // Fill hidden fields with ISO format (YYYY-MM-DDTHH:MM:SS) for backend
+        document.getElementById('monday_open_hidden').value = mondayOpen.toISOString().slice(0, 19);
+        document.getElementById('tuesday_date_hidden').value = tuesdayStr;
+        document.getElementById('tuesday_open_hidden').value = tuesdayOpen.toISOString().slice(0, 19);
+        document.getElementById('thursday_date_hidden').value = thursdayStr;
+        document.getElementById('thursday_open_hidden').value = thursdayOpen.toISOString().slice(0, 19);
+        
+        // Fill display fields with user-friendly format (YYYY-MM-DD HH:MM UTC)
+        document.getElementById('monday_open_display').value = mondayOpenStr + ' UTC';
+        document.getElementById('tuesday_date_display').value = tuesdayStr;
+        document.getElementById('tuesday_open_display').value = tuesdayOpenStr + ' UTC';
+        document.getElementById('thursday_date_display').value = thursdayStr;
+        document.getElementById('thursday_open_display').value = thursdayOpenStr + ' UTC';
+      }
+    }
+    
+    // Listen for Monday date changes
+    const mondayDateInput = document.getElementById('monday_date');
+    if (mondayDateInput) {
+      mondayDateInput.addEventListener('change', calculateWeekDates);
+      
+      // Auto-calculate on page load if Monday date is already set
+      if (mondayDateInput.value) {
+        calculateWeekDates();
+      }
+    }
+  </script>
 {% endblock %}

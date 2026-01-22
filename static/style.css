@@ -193,6 +193,51 @@ button:active {
   transform: translateY(0);
 }
 
+/* Slot selection labels */
+.slot-label {
+  cursor: pointer;
+  display: block;
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.slot-available {
+  background: rgba(0, 100, 0, 0.2);
+}
+
+.slot-reserved {
+  background: rgba(255, 0, 0, 0.2);
+}
+
+/* Admin day selector buttons */
+.day-selector-btn {
+  background: #444;
+  color: #e8e0d5;
+}
+
+.day-selector-btn.active {
+  background: #daa520;
+  color: #000;
+}
+
+/* Balance status indicators */
+.balance-value {
+  font-size: 1.8em;
+  font-weight: bold;
+}
+
+.balance-good {
+  color: #27ae60;
+}
+
+.balance-warning {
+  color: #f39c12;
+}
+
+.balance-bad {
+  color: #e74c3c;
+}
+
 /* Form elements */
 form div { margin-bottom: 18px; }
 

@@ -228,17 +228,23 @@ def clear_registration_open(day='monday'):
     db.commit()
 
 def get_current_theme():
-    """Get current theme - auto-detect Christmas season or use config."""
+    """Get current theme - auto-detect based on season or use config."""
     db = get_db()
     cur = db.cursor()
     cur.execute("SELECT value FROM config WHERE key = 'theme';")
     row = cur.fetchone()
     if row:
         return row['value']
-    # Auto-detect: December = Christmas theme
+    # TEMPORARY: Force cookies theme for demo
+    return 'cookies'
+    # Auto-detect based on date
     now = datetime.now()
+    # December = Christmas theme
     if now.month == 12:
         return 'christmas'
+    # Late January to early February (Jan 25 - Feb 10) = Cookies theme
+    if (now.month == 1 and now.day >= 25) or (now.month == 2 and now.day <= 10):
+        return 'cookies'
     return 'kingshot'
 
 def set_theme(theme: str):
@@ -249,29 +255,29 @@ def set_theme(theme: str):
     db.commit()
 
 
-def get_selection_state(event_date: str):
+def get_selection_state(event_date: str, event_day: str):
     db = get_db()
     cur = db.cursor()
-    cur.execute("SELECT ready_at, completed, completed_at FROM selection_state WHERE event_date = ?;", (event_date,))
+    cur.execute("SELECT ready_at, completed, completed_at FROM selection_state WHERE event_date = ? AND event_day = ?;", (event_date, event_day))
     row = cur.fetchone()
     if row:
         return {'ready_at': row['ready_at'], 'completed': bool(row['completed']), 'completed_at': row['completed_at']}
     return None
 
 
-def set_selection_ready(event_date: str, ready_at_iso: str):
+def set_selection_ready(event_date: str, event_day: str, ready_at_iso: str):
     db = get_db()
     cur = db.cursor()
-    cur.execute("INSERT OR REPLACE INTO selection_state (event_date, ready_at, completed) VALUES (?, ?, COALESCE((SELECT completed FROM selection_state WHERE event_date = ?), 0));",
-                (event_date, ready_at_iso, event_date))
+    cur.execute("INSERT OR REPLACE INTO selection_state (event_date, event_day, ready_at, completed) VALUES (?, ?, ?, COALESCE((SELECT completed FROM selection_state WHERE event_date = ? AND event_day = ?), 0));",
+                (event_date, event_day, ready_at_iso, event_date, event_day))
     db.commit()
 
 
-def mark_selection_completed(event_date: str):
+def mark_selection_completed(event_date: str, event_day: str):
     db = get_db()
     cur = db.cursor()
     now_iso = datetime.now(timezone.utc).isoformat()
-    cur.execute("UPDATE selection_state SET completed = 1, completed_at = ? WHERE event_date = ?;", (now_iso, event_date))
+    cur.execute("UPDATE selection_state SET completed = 1, completed_at = ? WHERE event_date = ? AND event_day = ?;", (now_iso, event_date, event_day))
     db.commit()
 
 
@@ -309,7 +315,7 @@ def optimize_slot_assignments(event_date: str, event_day: str):
         return 0
     
     import json
-    from scipy.optimize import linear_sum_assignment
+    from scipy.optimize import linear_sum_assignment  # type: ignore
     import numpy as np
     
     # Construire le mapping joueur -> préférences
@@ -535,7 +541,7 @@ def optimize_slot_assignments(event_date: str, event_day: str):
 
 def run_selection_if_ready(event_date: str, event_day: str):
     """If selection time is reached and not completed, run optimization algorithm."""
-    state = get_selection_state(event_date)
+    state = get_selection_state(event_date, event_day)
     if not state or not state.get('ready_at') or state.get('completed'):
         return state
 
@@ -550,8 +556,8 @@ def run_selection_if_ready(event_date: str, event_day: str):
     # Lancer l'optimisation
     num_conflicts = optimize_slot_assignments(event_date, event_day)
     
-    mark_selection_completed(event_date)
-    return get_selection_state(event_date)
+    mark_selection_completed(event_date, event_day)
+    return get_selection_state(event_date, event_day)
 
 def slot_aligned(dt: datetime) -> bool:
     return dt.second == 0 and dt.minute in (0, 30)
@@ -678,11 +684,11 @@ def index(day='monday'):
                 db.commit()
                 
                 # If this is the first prereg for this event, set selection ready time to +1 day
-                state = get_selection_state(event_date_str)
+                state = get_selection_state(event_date_str, day)
                 if not state or not state.get('ready_at'):
                     ready_at = (now + timedelta(days=1)).isoformat()
-                    set_selection_ready(event_date_str, ready_at)
-                    selection_state = get_selection_state(event_date_str)
+                    set_selection_ready(event_date_str, day, ready_at)
+                    selection_state = get_selection_state(event_date_str, day)
                 
                 list_msg = 'secondary list' if list_type == 'secondary' else 'main list'
                 flash(f'Pre-registration saved in {list_msg} with {len(selected_slots)} preferred slots! Optimization will run in 24h.', 'success')
@@ -707,11 +713,11 @@ def index(day='monday'):
             )
             db.commit()
             # If this is the first prereg for this event, set selection ready time to +1 day
-            state = get_selection_state(event_date_str)
+            state = get_selection_state(event_date_str, day)
             if not state or not state.get('ready_at'):
                 ready_at = (now + timedelta(days=1)).isoformat()
-                set_selection_ready(event_date_str, ready_at)
-                selection_state = get_selection_state(event_date_str)
+                set_selection_ready(event_date_str, day, ready_at)
+                selection_state = get_selection_state(event_date_str, day)
             flash('Pre-registration saved! Selection will pick the top 20 once the timer ends.', 'success')
 
     # Handle switch from waitlist to secondary list
@@ -796,7 +802,7 @@ def index(day='monday'):
                 
                 db.commit()
                 # Re-run to get updated state
-                selection_state = get_selection_state(event_date_str)
+                selection_state = get_selection_state(event_date_str, day)
 
     # Handle reservation POST (only if registrations open and selection allows)
     if request.method == 'POST' and action in ('reserve', 'move') and registrations_open:
@@ -914,7 +920,7 @@ def index(day='monday'):
     cur.execute("SELECT id, slot_iso, player_names, speedup_days, resolved, winner FROM slot_conflicts WHERE event_date = ? AND event_day = ? AND resolved = 0;", (event_date_str, day))
     conflicts = cur.fetchall()
 
-    selection_state = selection_state or get_selection_state(event_date_str)
+    selection_state = selection_state or get_selection_state(event_date_str, day)
 
     # Calculate statistics for main and secondary lists
     stats_main = None
@@ -991,7 +997,7 @@ def admin():
     db = get_db()
     cur = db.cursor()
     
-    # Get selected day from form or default to monday
+    # Get selected day from form or default to monday (can also be 'kvk_week')
     selected_day = request.form.get('selected_day', 'monday') if request.method == 'POST' else request.args.get('day', 'monday')
     
     if request.method == 'POST':
@@ -1134,16 +1140,72 @@ def admin():
             clear_registration_open(selected_day)
             flash(f'Registrations for {selected_day} are now open immediately.', 'success')
         
+        elif action == 'configure_week':
+            # Configure the entire KVK week
+            monday_date = request.form.get('monday_date', '').strip()
+            tuesday_date = request.form.get('tuesday_date', '').strip()
+            thursday_date = request.form.get('thursday_date', '').strip()
+            monday_open = request.form.get('monday_open', '').strip()
+            tuesday_open = request.form.get('tuesday_open', '').strip()
+            thursday_open = request.form.get('thursday_open', '').strip()
+            
+            try:
+                # Validate dates
+                datetime.strptime(monday_date, '%Y-%m-%d')
+                datetime.strptime(tuesday_date, '%Y-%m-%d')
+                datetime.strptime(thursday_date, '%Y-%m-%d')
+                
+                # Validate registration open times (ISO format: YYYY-MM-DDTHH:MM:SS from hidden fields)
+                # The hidden fields already contain the correct ISO format
+                monday_open_iso = monday_open
+                tuesday_open_iso = tuesday_open
+                thursday_open_iso = thursday_open
+                
+                datetime.fromisoformat(monday_open_iso)
+                datetime.fromisoformat(tuesday_open_iso)
+                datetime.fromisoformat(thursday_open_iso)
+                
+                # Clean all old data
+                cur.execute('DELETE FROM preregistrations')
+                cur.execute('DELETE FROM reservations')
+                cur.execute('DELETE FROM slot_conflicts')
+                cur.execute('DELETE FROM training_players')
+                cur.execute('DELETE FROM selection_state')
+                
+                # Set event dates
+                set_event_date(monday_date, 'monday')
+                set_event_date(tuesday_date, 'tuesday')
+                set_event_date(thursday_date, 'thursday')
+                
+                # Set registration open times
+                set_registration_open(monday_open_iso, 'monday')
+                set_registration_open(tuesday_open_iso, 'tuesday')
+                set_registration_open(thursday_open_iso, 'thursday')
+                
+                # Create selection states for each day
+                for event_date, event_day in [(monday_date, 'monday'), 
+                                               (tuesday_date, 'tuesday'), 
+                                               (thursday_date, 'thursday')]:
+                    cur.execute('''
+                        INSERT INTO selection_state (event_date, event_day, completed, ready_at)
+                        VALUES (?, ?, 0, NULL)
+                    ''', (event_date, event_day))
+                
+                db.commit()
+                flash(f'✅ KVK Week configured! Monday: {monday_date}, Tuesday: {tuesday_date}, Thursday: {thursday_date}. All data reset.', 'success')
+            except ValueError as e:
+                flash(f'Invalid date/time format: {str(e)}', 'error')
+        
         elif action == 'set_theme':
             new_theme = request.form.get('theme', 'kingshot').strip()
-            if new_theme in ['kingshot', 'christmas', 'auto']:
+            if new_theme in ['kingshot', 'christmas', 'cookies', 'auto']:
                 if new_theme == 'auto':
                     # Remove theme config to use auto-detection
                     db = get_db()
                     cur = db.cursor()
                     cur.execute("DELETE FROM config WHERE key = 'theme';")
                     db.commit()
-                    flash('Theme set to auto-detect (Christmas in December).', 'success')
+                    flash('Theme set to auto-detect (Dec=Christmas, Jan25-Feb10=Cookies).', 'success')
                 else:
                     set_theme(new_theme)
                     flash(f'Theme changed to {new_theme}.', 'success')
@@ -1192,6 +1254,11 @@ def admin():
         return redirect(url_for('admin', day=selected_day))
     
     # GET: show admin page for selected day
+    # For 'kvk_week' tab, we don't need reservation counts
+    if selected_day == 'kvk_week':
+        theme = get_current_theme()
+        return render_template('admin.html', selected_day=selected_day, theme=theme, current_date='', reservation_count=0, reservations=[], registration_open=None, theme_mode='auto', conflicts=[], preregistrations=[])
+    
     current_date = get_event_date(selected_day)
     # Only count and show reservations for the current event date and day
     cur.execute("SELECT COUNT(*) FROM reservations WHERE event_date LIKE ? AND event_day = ?;", (current_date + '%', selected_day))

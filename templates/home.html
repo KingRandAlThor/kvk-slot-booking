@@ -11,20 +11,20 @@
   <p class="subtitle">⚔️ Choose your event day ⚔️</p>
   {% endif %}
 
-  <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 20px; max-width: 500px; margin-left: auto; margin-right: auto;">
+  <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 12px; max-width: 500px; margin-left: auto; margin-right: auto;">
     <!-- Monday -->
     <a href="{{ url_for('index', day='monday') }}" style="text-decoration: none;">
       <div style="
         background: linear-gradient(135deg, rgba(218, 165, 32, 0.1) 0%, rgba(139, 69, 19, 0.05) 100%);
         border: 2px solid rgba(218, 165, 32, 0.3);
-        border-radius: 16px;
-        padding: 30px;
+        border-radius: 12px;
+        padding: 18px;
         text-align: center;
         transition: all 0.3s ease;
         cursor: pointer;
       " onmouseover="this.style.borderColor='rgba(218, 165, 32, 0.6)'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(218, 165, 32, 0.3)'" onmouseout="this.style.borderColor='rgba(218, 165, 32, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-        <h2 style="margin: 0; color: #daa520; font-size: 2em;">🏗️ Monday - Construction</h2>
-        <p style="margin: 10px 0 0 0; color: #888; font-size: 0.95em;">Single list event</p>
+        <h2 style="margin: 0; color: #daa520; font-size: 1.5em;">🏗️ Monday - Construction</h2>
+        <p style="margin: 8px 0 0 0; color: #888; font-size: 0.85em;">Single list event</p>
       </div>
     </a>
 
@@ -33,14 +33,14 @@
       <div style="
         background: linear-gradient(135deg, rgba(218, 165, 32, 0.1) 0%, rgba(139, 69, 19, 0.05) 100%);
         border: 2px solid rgba(218, 165, 32, 0.3);
-        border-radius: 16px;
-        padding: 30px;
+        border-radius: 12px;
+        padding: 18px;
         text-align: center;
         transition: all 0.3s ease;
         cursor: pointer;
       " onmouseover="this.style.borderColor='rgba(218, 165, 32, 0.6)'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(218, 165, 32, 0.3)'" onmouseout="this.style.borderColor='rgba(218, 165, 32, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-        <h2 style="margin: 0; color: #daa520; font-size: 2em;">🔬 Tuesday - Research</h2>
-        <p style="margin: 10px 0 0 0; color: #888; font-size: 0.95em;">Single list event</p>
+        <h2 style="margin: 0; color: #daa520; font-size: 1.5em;">🔬 Tuesday - Research</h2>
+        <p style="margin: 8px 0 0 0; color: #888; font-size: 0.85em;">Single list event</p>
       </div>
     </a>
 
@@ -49,32 +49,28 @@
       <div style="
         background: linear-gradient(135deg, rgba(218, 165, 32, 0.1) 0%, rgba(139, 69, 19, 0.05) 100%);
         border: 2px solid rgba(218, 165, 32, 0.3);
-        border-radius: 16px;
-        padding: 30px;
+        border-radius: 12px;
+        padding: 18px;
         text-align: center;
         transition: all 0.3s ease;
         cursor: pointer;
       " onmouseover="this.style.borderColor='rgba(218, 165, 32, 0.6)'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 25px rgba(218, 165, 32, 0.3)'" onmouseout="this.style.borderColor='rgba(218, 165, 32, 0.3)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-        <h2 style="margin: 0; color: #daa520; font-size: 2em;">⚔️ Thursday - Troop Training</h2>
-        <p style="margin: 10px 0 0 0; color: #888; font-size: 0.95em;">📋 Dual list event (Main + Secondary)</p>
+        <h2 style="margin: 0; color: #daa520; font-size: 1.5em;">⚔️ Thursday - Troop Training</h2>
+        <p style="margin: 8px 0 0 0; color: #888; font-size: 0.85em;">📋 Dual list event (Main + Secondary)</p>
       </div>
     </a>
   </div>
 
-  <div style="text-align: center; margin-top: 40px; color: #888; font-size: 0.9em;">
-    <p>Configure dates in admin panel for each event day</p>
-  </div>
-
   <!-- KVK Training Button -->
-  <div style="text-align: center; margin-top: 30px;">
+  <div style="text-align: center; margin-top: 18px;">
     <a href="{{ url_for('kvk_training') }}" style="text-decoration: none;">
       <button type="button" style="
         background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
         color: white;
-        padding: 15px 30px;
+        padding: 12px 24px;
         border: none;
-        border-radius: 12px;
-        font-size: 1.1em;
+        border-radius: 10px;
+        font-size: 1em;
         cursor: pointer;
         box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
         transition: all 0.3s ease;

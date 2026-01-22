@@ -10,6 +10,10 @@
     <link rel="stylesheet" href="/static/style-christmas.css?v=6">
     <link rel="stylesheet" href="/static/compact.css?v=6">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎄</text></svg>">
+    {% elif theme == 'cookies' %}
+    <link rel="stylesheet" href="/static/style-cookies.css?v=6">
+    <link rel="stylesheet" href="/static/compact.css?v=6">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍪</text></svg>">
     {% else %}
     <link rel="stylesheet" href="/static/style.css?v=6">
     <link rel="stylesheet" href="/static/compact.css?v=6">
@@ -43,32 +47,67 @@
     <img class="rydak" src="/static/Rydak.JPEG.png" style="left: 50%; animation-duration: 14s; animation-delay: 6s;">
     <img class="rydak" src="/static/Rydak.JPEG.png" style="left: 70%; animation-duration: 18s; animation-delay: 2s;">
     <img class="rydak" src="/static/Rydak.JPEG.png" style="left: 90%; animation-duration: 13s; animation-delay: 5s;">
-    {% endif %}
-    
-    <!-- Rand on vacation - BLOCKING OVERLAY -->
-    <div id="vacationOverlay" class="vacation-overlay">
-      <div class="dancing-man">🕺💃🕺</div>
-      <div class="vacation-badge">👑 RAND IS ON VACATION 🏖️<br>The site is closed! 🌴</div>
-      <button class="remove-vacation-btn" onclick="removeVacation()">⚔️ FORCE ACCESS ⚔️</button>
-    </div>
-    
+    {% elif theme == 'cookies' %}
+    <!-- Cookie Rain -->
+    <div id="cookie-rain"></div>
     <script>
-      function removeVacation() {
-        const password = prompt('🔐 Enter the password to access the site:');
-        if (password === 'ArteJTM<3') {
-          document.getElementById('vacationOverlay').classList.add('hidden');
-          alert('✅ Access granted! Welcome!');
-        } else if (password !== null) {
-          alert('❌ Incorrect password! The site remains blocked.');
+      (function() {
+        const cookieRain = document.getElementById('cookie-rain');
+        const cookieEmojis = ['🍪', '🍪', '🍪', '🥛', '🍪', '🥛', '🍪', '🥛'];
+        
+        function createCookie() {
+          const cookie = document.createElement('div');
+          cookie.className = 'cookie';
+          const emoji = cookieEmojis[Math.floor(Math.random() * cookieEmojis.length)];
+          cookie.textContent = emoji;
+          
+          // Position aléatoire
+          const startX = Math.random() * 100;
+          cookie.style.left = startX + '%';
+          cookie.style.top = '-50px';
+          
+          // Taille aléatoire (plus petite pour le lait)
+          let size;
+          if (emoji === '🥛') {
+            size = Math.random() * 12 + 20; // Lait: 20-32px
+          } else {
+            size = Math.random() * 20 + 28; // Cookies: 28-48px
+          }
+          cookie.style.fontSize = size + 'px';
+          
+          // Durée aléatoire
+          const duration = Math.random() * 4 + 6;
+          cookie.style.animationDuration = duration + 's';
+          
+          cookieRain.appendChild(cookie);
+          
+          // Supprimer après l'animation
+          setTimeout(() => {
+            if (cookie.parentNode) {
+              cookie.parentNode.removeChild(cookie);
+            }
+          }, duration * 1000 + 100);
         }
-      }
+        
+        // Créer des cookies initiaux
+        for (let i = 0; i < 20; i++) {
+          setTimeout(() => createCookie(), i * 150);
+        }
+        
+        // Continuer à créer des cookies
+        setInterval(() => createCookie(), 600);
+      })();
     </script>
+    {% endif %}
     
     <div class="container">
       {% block content %}{% endblock %}
       <footer>
         {% if theme == 'christmas' %}
         🎄 KINGSHOT Slot Booking © 2025 🎅 Merry Christmas! 🎄
+        {% elif theme == 'cookies' %}
+        <br>
+        🍪 KINGSHOT Slot Booking © 2026 🥛 Cookie Season! 🍪
         {% else %}
         👑 KINGSHOT Slot Booking © 2025 👑
         {% endif %}

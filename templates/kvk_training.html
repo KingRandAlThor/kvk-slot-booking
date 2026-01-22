@@ -3,6 +3,10 @@
 {% block title %}⚔️ KVK Training Teams — KINGSHOT{% endblock %}
 
 {% block content %}
+  <div style="margin-bottom: 16px;">
+    <a href="{{ url_for('home') }}" class="btn" style="font-size: 0.9em; padding: 8px 16px;">← Back to Home</a>
+  </div>
+
   <h1>⚔️ KVK Training - Team Balancer</h1>
 
   {% with messages = get_flashed_messages(with_categories=true) %}
@@ -163,13 +167,13 @@
     <div style="display: flex; justify-content: center; gap: 40px; margin: 20px 0;">
       <div>
         <div style="font-size: 0.9em; color: #888;">Power Difference</div>
-        <div style="font-size: 1.8em; font-weight: bold; color: {% if power_diff < 5 %}#27ae60{% elif power_diff < 10 %}#f39c12{% else %}#e74c3c{% endif %};">
+        <div class="balance-value {% if power_diff < 5 %}balance-good{% elif power_diff < 10 %}balance-warning{% else %}balance-bad{% endif %}">
           {{ power_diff }}M
         </div>
       </div>
       <div>
         <div style="font-size: 0.9em; color: #888;">Player Difference</div>
-        <div style="font-size: 1.8em; font-weight: bold; color: {% if player_diff <= 1 %}#27ae60{% elif player_diff <= 2 %}#f39c12{% else %}#e74c3c{% endif %};">
+        <div class="balance-value {% if player_diff <= 1 %}balance-good{% elif player_diff <= 2 %}balance-warning{% else %}balance-bad{% endif %}">
           {{ player_diff }}
         </div>
       </div>

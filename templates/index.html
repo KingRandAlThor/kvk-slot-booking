@@ -3,6 +3,10 @@
 {% block title %}{% if theme == 'christmas' %}🎄{% else %}👑{% endif %} {{ event_type.name }} — KINGSHOT{% endblock %}
 
 {% block content %}
+  <div style="margin-bottom: 16px;">
+    <a href="{{ url_for('home') }}" class="btn" style="font-size: 0.9em; padding: 8px 16px;">← Back to Home</a>
+  </div>
+
   {% if theme == 'christmas' %}
   <h1>🎄 {{ event_type.name }} Day {{ event_type.emoji }}</h1>
   <p class="subtitle">🎅 {{ event_date }} — 00:00 to 23:59 UTC 🎁</p>
@@ -161,7 +165,7 @@
         <div style="max-height: 400px; overflow-y: auto; border: 1px solid #555; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-top: 8px;">
           {% for s in slots_main %}
             <div style="margin: 4px 0;">
-              <label style="cursor: pointer; display: block; padding: 8px; border-radius: 4px; background: {% if s.reserved %}rgba(255,0,0,0.2){% else %}rgba(0,100,0,0.2){% endif %};">
+              <label class="slot-label {% if s.reserved %}slot-reserved{% else %}slot-available{% endif %}">
                 <input type="checkbox" name="selected_slots[]" value="{{ s.iso }}" 
                        {% if s.reserved %}disabled{% endif %}
                        class="slot-checkbox" 
@@ -195,6 +199,64 @@
           const count = document.querySelectorAll('.slot-checkbox:checked').length;
           document.getElementById('selected-count').textContent = `Selected: ${count} slot${count !== 1 ? 's' : ''}`;
         });
+      });
+      
+      // Confirmation modal avant soumission
+      document.getElementById('prereg-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const playerName = this.querySelector('[name="player_name"]').value;
+        const speedupDays = this.querySelector('[name="speedup_days"]').value;
+        const selectedSlots = Array.from(document.querySelectorAll('.slot-checkbox:checked'))
+          .map(cb => cb.parentElement.querySelector('span').textContent.split(' ')[0])
+          .join(', ');
+        
+        if (!selectedSlots) {
+          alert('Please select at least one slot!');
+          return;
+        }
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 16px;';
+        modal.innerHTML = `
+          <div style="background: linear-gradient(135deg, rgba(20,20,30,0.98), rgba(15,15,25,0.99)); border: 2px solid #daa520; border-radius: 16px; padding: clamp(16px, 5vw, 32px); max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto;">
+            <h2 style="margin: 0 0 20px 0; color: #daa520; font-size: clamp(1.2em, 4vw, 1.5em);">📋 Confirm Your Registration</h2>
+            <div style="margin-bottom: 20px;">
+              <p style="font-size: clamp(0.9em, 3vw, 1em);"><strong>Player:</strong> ${playerName}</p>
+              <p style="font-size: clamp(0.9em, 3vw, 1em);"><strong>Speedup Days:</strong> ${speedupDays} days</p>
+              <p style="font-size: clamp(0.9em, 3vw, 1em);"><strong>Selected Slots:</strong></p>
+              <div style="max-height: 200px; overflow-y: auto; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-top: 8px; font-size: clamp(0.85em, 2.5vw, 0.95em);">
+                ${selectedSlots.split(', ').map(slot => `<div style="padding: 4px 0;">${slot} UTC</div>`).join('')}
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-direction: column;">
+              <button id="confirm-btn" style="width: 100%; padding: 14px 20px; background: #51cf66; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: clamp(0.9em, 3vw, 1em);">✅ Confirm</button>
+              <div style="display: flex; gap: 8px;">
+                <button id="modify-btn" style="flex: 1; padding: 12px 16px; background: #868e96; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: clamp(0.85em, 2.8vw, 0.95em);">✏️ Modify</button>
+                <button id="delete-btn" style="flex: 1; padding: 12px 16px; background: #fa5252; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: clamp(0.85em, 2.8vw, 0.95em);">🗑️ Delete</button>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Modify - just close modal
+        document.getElementById('modify-btn').onclick = () => {
+          modal.remove();
+        };
+        
+        // Delete - uncheck all slots and close modal
+        document.getElementById('delete-btn').onclick = () => {
+          document.querySelectorAll('.slot-checkbox:checked').forEach(cb => cb.checked = false);
+          document.getElementById('selected-count').textContent = 'Selected: 0 slots';
+          modal.remove();
+        };
+        
+        // Confirm - submit form
+        document.getElementById('confirm-btn').onclick = () => {
+          modal.remove();
+          e.target.submit();
+        };
       });
     </script>
   </div>
@@ -264,32 +326,16 @@
         <p><em>Contact admin to resolve these conflicts.</em></p>
       </div>
     {% endif %}
-    
-    <!-- Dernier inscrit -->
-    {% if all_preregistrations and all_preregistrations|length > 0 %}
-    <div style="margin-top: 16px; padding: 12px; background: linear-gradient(135deg, rgba(81,207,102,0.1), rgba(51,217,178,0.05)); border: 2px solid #51cf66; border-radius: 8px;">
-      <h3 style="margin: 0 0 8px 0; font-size: 1em; color: #51cf66;">🎯 Latest Registration</h3>
-      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-        <span style="font-weight: bold; font-size: 1.1em;">{{ all_preregistrations[-1].player_name }}</span>
-        <span style="color: #ffd43b;">{{ all_preregistrations[-1].speedup_days }} days</span>
-        <span style="font-size: 0.85em; color: #aaa;">{{ all_preregistrations[-1].list_type|capitalize }} list</span>
-        {% if all_preregistrations[-1].assigned_slot %}
-          <span style="color: #51cf66;">✓ {{ all_preregistrations[-1].assigned_slot }}</span>
-        {% else %}
-          <span style="color: #ffa500;">⏳ Pending</span>
-        {% endif %}
-      </div>
-    </div>
-    {% endif %}
+
   </div>
   {% if is_dual_list and selected_players_secondary %}
   <div class="reserve-forms-grid">
     <!-- Formulaire Main List -->
     <div class="reserve-panel">
       {% if theme == 'christmas' %}
-      <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> 🎁 Main List</h2>
+      <h2>🎁 Main List</h2>
       {% else %}
-      <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> ⚔️ Main List</h2>
+      <h2>⚔️ Main List</h2>
       {% endif %}
       <form method="post" class="reserve-form">
         <input type="hidden" name="action" value="reserve">
@@ -361,45 +407,6 @@
         </div>
       </form>
     </div>
-  </div>
-  {% else %}
-  <!-- Formulaire Main List seul -->
-  <div class="reserve-panel">
-    {% if theme == 'christmas' %}
-    <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> 🎁 Confirm slot</h2>
-    {% else %}
-    <h2><a href="{{ url_for('rydak_wheel') }}" title="Quel Rydak es-tu ?" style="text-decoration:none;">🎰</a> ⚔️ Confirm slot</h2>
-    {% endif %}
-    <form method="post" class="reserve-form">
-      <input type="hidden" name="action" value="reserve">
-      <div>
-        <label>Available slot</label>
-        <select name="slot" required>
-          <option value="">-- Select a slot --</option>
-          {% for s in free_slots_main %}
-            <option value="{{ s.iso }}">{{ s.slot.strftime('%H:%M') }} UTC</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div>
-        <label>Selected player</label>
-        <select name="player_name" required>
-          <option value="">-- Choose your name --</option>
-          {% if selected_players %}
-            {% for p in selected_players %}
-              <option value="{{ p.player_name }}">{{ p.player_name }} ({{ p.speedup_days }} days)</option>
-            {% endfor %}
-          {% endif %}
-        </select>
-      </div>
-      <div style="margin-top:16px;">
-        {% if theme == 'christmas' %}
-        <button type="submit">🎁 Confirm Reservation</button>
-        {% else %}
-        <button type="submit">⚔️ Confirm Reservation</button>
-        {% endif %}
-      </div>
-    </form>
   </div>
   {% endif %}
   {% endif %}
@@ -541,7 +548,7 @@
           <td data-label="Speedups">{{ prereg.speedup_days }} days</td>
           <td data-label="Slot">
             {% if prereg.assigned_slot %}
-              <span style="color: #51cf66;">✓ {{ prereg.assigned_slot }}</span>
+              <span style="color: #51cf66;">✓ {{ prereg.assigned_slot[11:16] }} UTC</span>
             {% else %}
               <span style="color: #ff6b6b;">No slot assigned</span>
             {% endif %}
