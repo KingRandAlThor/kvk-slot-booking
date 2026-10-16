@@ -151,7 +151,7 @@ def init_schema(db):
     db.commit()
 
 app = Flask(__name__)
-app.secret_key = 'dev-secret'
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret')
 
 # Add custom Jinja2 filter for JSON parsing
 import json
@@ -167,7 +167,8 @@ def from_json_filter(value):
 
 SLOT_MIN_SPEEDUP_DAYS = 20
 DEFAULT_EVENT_DATE = '2025-12-02'  # YYYY-MM-DD format
-ADMIN_PASSWORD = 'AidxRand2026Love'  # Change this to your desired password
+# Défini par variable d'environnement ; sans valeur, les actions admin sont refusées.
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', '')
 SELECTION_TOP_N = 20
 
 # Event types by weekday (0=Monday, 1=Tuesday, etc.)
@@ -809,7 +810,7 @@ def index(day='monday'):
         # Move reservation action
         if action == 'move':
             password = request.form.get('password', '').strip()
-            if password != ADMIN_PASSWORD:
+            if not ADMIN_PASSWORD or password != ADMIN_PASSWORD:
                 flash('Incorrect admin password.', 'error')
             else:
                 old_slot = request.form.get('old_slot', '')
@@ -1005,7 +1006,7 @@ def admin():
         password = request.form.get('password', '').strip()
         
         # Verify password for all admin actions
-        if password != ADMIN_PASSWORD:
+        if not ADMIN_PASSWORD or password != ADMIN_PASSWORD:
             flash('Incorrect password.', 'error')
             return redirect(url_for('admin', day=selected_day))
         

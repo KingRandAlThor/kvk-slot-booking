@@ -1,78 +1,50 @@
-# 🚀 Déploiement sur PythonAnywhere
+# Déploiement sur PythonAnywhere
 
-## Commande de déploiement rapide
+## Mise à jour rapide
 
-Pour mettre à jour l'application sur PythonAnywhere après un push GitHub :
+Après un push sur GitHub, depuis une console Bash de PythonAnywhere :
 
 ```bash
 cd ~/kvk-slot-booking && git pull origin main && touch /var/www/randalthor_pythonanywhere_com_wsgi.py
 ```
 
-⚠️ **IMPORTANT** : Le nom du fichier WSGI est `randalthor_pythonanywhere_com_wsgi.py` (tout en minuscules)
+Le nom du fichier WSGI est `randalthor_pythonanywhere_com_wsgi.py`, en minuscules. Le `touch` force le rechargement de l'application ; le bouton **Reload** de l'onglet Web fait la même chose.
 
-## Étapes détaillées
+## Première installation
 
-### 1. Se connecter à PythonAnywhere
-- Aller sur https://www.pythonanywhere.com
-- Se connecter avec le compte **RandAlThor**
-- Ouvrir un **Bash console**
+1. Cloner le dépôt : `git clone https://github.com/KingRandAlThor/kvk-slot-booking.git ~/kvk-slot-booking`
+2. Installer les dépendances : `pip install --user -r requirements.txt`
+3. Créer la base : `cd ~/kvk-slot-booking && python3 init_db.py`
+4. Créer la web app (Flask, Python 3.x) dans l'onglet **Web**.
 
-### 2. Mettre à jour le code
-```bash
-cd ~/kvk-slot-booking
-git pull origin main
-```
+## Fichier WSGI
 
-### 3. Recharger l'application
-```bash
-touch /var/www/randalthor_pythonanywhere_com_wsgi.py
-```
-
-Ou via le dashboard :
-- Aller sur https://www.pythonanywhere.com/user/RandAlThor/webapps/
-- Cliquer sur le bouton **"Reload"**
-
-## ⚠️ IMPORTANT - Configuration initiale
-
-### Vérifier le fichier WSGI
-
-Le fichier `/var/www/randalthor_pythonanywhere_com_wsgi.py` doit contenir :
+Le fichier `/var/www/randalthor_pythonanywhere_com_wsgi.py` doit contenir, en plus des variables d'environnement :
 
 ```python
 import sys
 import os
+
+os.environ['ADMIN_PASSWORD'] = 'choisis-un-mot-de-passe-solide'
+os.environ['SECRET_KEY'] = 'une-longue-chaine-aleatoire'
+
 project_home = '/home/RandAlThor/kvk-slot-booking'
 if project_home not in sys.path:
     sys.path.insert(0, project_home)
 os.chdir(project_home)
+
 from app import app as application
 ```
 
-⚠️ Le path doit pointer vers `kvk-slot-booking` et PAS vers `kvk` !
+Le chemin doit pointer vers `kvk-slot-booking` (l'ancien projet `~/kvk/` n'est plus utilisé). Le mot de passe et la clé ne doivent jamais être publiés dans le dépôt.
 
-### Réinitialiser la base de données (si nécessaire)
+## Configurer une semaine d'événement
 
-Si le site ne fonctionne pas après un pull :
+1. Ouvrir la page `/admin` du site et saisir le mot de passe administrateur.
+2. Onglet « Configure KVK Week », choisir le lundi de la semaine, puis « Configure Week ».
 
-```bash
-cd ~/kvk-slot-booking && python3 init_db.py
-```
+## Dépannage
 
-Puis configurer les dates via l'admin :
-- Aller sur https://randalthor.pythonanywhere.com/admin
-- Mot de passe : `AidxRand2026Love`
-- Onglet "📆 Configure KVK Week"
-- Sélectionner le lundi de la semaine KVK
-- Cliquer sur "Configure Week"
-
-## Structure sur PythonAnywhere
-
-- **Projet actif** : `~/kvk-slot-booking/` ✅
-- **Ancien projet** : `~/kvk/` (ne plus utiliser)
-- **WSGI file** : `/var/www/randalthor_pythonanywhere_com_wsgi.py` (minuscules)
-- **Base de données** : `~/kvk-slot-booking/kvk.db`
-
-## Notes
-
-- Le `touch` sur le fichier WSGI force le rechargement automatique de l'application
-- Pensez à vérifier les logs en cas d'erreur : **Error log** dans le dashboard
+- Si le site ne répond plus après un `git pull`, relancer `python3 init_db.py` puis recharger l'application.
+- Les erreurs sont visibles dans **Error log**, sur le tableau de bord de PythonAnywhere.
+- La base de données se trouve dans `~/kvk-slot-booking/kvk.db` ; elle n'est pas versionnée.
